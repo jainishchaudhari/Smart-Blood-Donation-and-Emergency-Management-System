@@ -9,11 +9,21 @@ const registerUser = async (req, res) => {
       name,
       email,
       password,
-      role,
       phone,
       bloodGroup,
       city,
     } = req.body
+
+    // Allow only public registration roles
+    const allowedRoles = ['user', 'donor', 'hospital']
+    const requestedRole = req.body.role || 'user'
+
+    if (!allowedRoles.includes(requestedRole)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Invalid role. Admin registration is not allowed.',
+      })
+    }
 
     // Check required fields
     if (!name || !email || !password) {
@@ -24,16 +34,27 @@ const registerUser = async (req, res) => {
     }
 
     // Validate password length
-    if (password.length < 6) {
+    if (typeof password !== 'string' || password.length < 6) {
       return res.status(400).json({
         success: false,
         message: 'Password must be at least 6 characters long',
       })
     }
 
+    // Validate email format
+    const normalizedEmail = email.trim().toLowerCase()
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+    if (!emailRegex.test(normalizedEmail)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid email address',
+      })
+    }
+
     // Check whether user already exists
     const existingUser = await User.findOne({
-      email: email.toLowerCase(),
+      email: normalizedEmail,
     })
 
     if (existingUser) {
@@ -48,10 +69,10 @@ const registerUser = async (req, res) => {
 
     // Create user
     const user = await User.create({
-      name,
-      email: email.toLowerCase(),
+      name: name.trim(),
+      email: normalizedEmail,
       password: hashedPassword,
-      role,
+      role: requestedRole,
       phone,
       bloodGroup,
       city,
@@ -86,6 +107,22 @@ const registerUser = async (req, res) => {
   } catch (error) {
     console.error('Registration error:', error.message)
 
+    // Handle duplicate email errors
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: 'User already exists with this email',
+      })
+    }
+
+    // Handle Mongoose validation errors
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      })
+    }
+
     return res.status(500).json({
       success: false,
       message: 'Server error during registration',
@@ -106,9 +143,19 @@ const loginUser = async (req, res) => {
       })
     }
 
+    // Validate email type
+    if (typeof email !== 'string' || typeof password !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid email or password format',
+      })
+    }
+
     // Find user
+    const normalizedEmail = email.trim().toLowerCase()
+
     const user = await User.findOne({
-      email: email.toLowerCase(),
+      email: normalizedEmail,
     })
 
     if (!user) {
