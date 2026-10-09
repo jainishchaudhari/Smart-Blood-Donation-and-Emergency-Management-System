@@ -1,0 +1,172 @@
+import { Link, useNavigate } from 'react-router-dom'
+import { HeartPulse, LogIn, UserPlus } from 'lucide-react'
+
+function Login() {
+  const navigate = useNavigate()
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+
+    const formData = new FormData(e.currentTarget)
+
+    const email = formData.get('email')
+    const password = formData.get('password')
+    const role = formData.get('role')
+
+    if (!email || !password || !role) {
+      alert('Please fill in all fields.')
+      return
+    }
+
+    // Demo navigation only. Real authentication will be added later.
+    if (role === 'user') {
+      navigate('/user-dashboard')
+    } else if (role === 'donor') {
+      navigate('/donor-dashboard')
+    } else if (role === 'hospital') {
+      navigate('/hospital-dashboard')
+    } else if (role === 'admin') {
+      navigate('/admin-dashboard')
+    }
+  }
+
+  return (
+    <div className="flex min-h-[80vh] items-center justify-center bg-red-50 px-4 py-10">
+      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl">
+
+        {/* Logo */}
+        <div className="mb-5 flex justify-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+            <HeartPulse size={36} className="text-red-600" />
+          </div>
+        </div>
+
+        {/* Heading */}
+        <h1 className="text-center text-3xl font-bold text-gray-900">
+          Welcome Back!
+        </h1>
+
+        <p className="mt-2 text-center text-gray-500">
+          Login to your LifeFlow account
+        </p>
+
+        {/* Login Form */}
+        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+
+          {/* Email */}
+          <div>
+            <label
+              htmlFor="email"
+              className="mb-2 block text-sm font-semibold text-gray-700"
+            >
+              Email Address
+            </label>
+
+            <input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="Enter your email"
+              autoComplete="email"
+              required
+              className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-red-500 focus:ring-2 focus:ring-red-100"
+            />
+          </div>
+
+          {/* Password */}
+          <div>
+            <label
+              htmlFor="password"
+              className="mb-2 block text-sm font-semibold text-gray-700"
+            >
+              Password
+            </label>
+
+            <input
+              id="password"
+              name="password"
+              type="password"
+              placeholder="Enter your password"
+              autoComplete="current-password"
+              required
+              className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-red-500 focus:ring-2 focus:ring-red-100"
+            />
+          </div>
+
+          {/* Role Selection */}
+          <div>
+            <label
+              htmlFor="role"
+              className="mb-2 block text-sm font-semibold text-gray-700"
+            >
+              Login As
+            </label>
+
+            <select
+              id="role"
+              name="role"
+              defaultValue=""
+              required
+              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 outline-none transition focus:border-red-500 focus:ring-2 focus:ring-red-100"
+            >
+              <option value="" disabled>
+                Select your role
+              </option>
+
+              <option value="user">User</option>
+              <option value="donor">Donor</option>
+              <option value="hospital">Hospital / Blood Bank</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
+          {/* Login Button */}
+          <button
+            type="submit"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-600 py-3 font-semibold text-white transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2"
+          >
+            <LogIn size={20} />
+            Login
+          </button>
+        </form>
+
+        {/* Divider */}
+        <div className="my-6 flex items-center gap-3">
+          <div className="h-px flex-1 bg-gray-200" />
+          <span className="text-sm text-gray-400">OR</span>
+          <div className="h-px flex-1 bg-gray-200" />
+        </div>
+
+        {/* Register Button */}
+        <p className="text-center text-sm text-gray-600">
+          Don't have an account?
+        </p>
+
+        <Link
+          to="/register"
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-red-600 py-3 font-semibold text-red-600 transition hover:bg-red-50"
+        >
+          <UserPlus size={20} />
+          Create New Account / Register
+        </Link>
+
+        {/* Home Link */}
+        <div className="mt-5 text-center">
+          <Link
+            to="/"
+            className="text-sm font-medium text-gray-500 transition hover:text-red-600"
+          >
+            ← Back to Home
+          </Link>
+        </div>
+
+        {/* Footer Text */}
+        <p className="mt-6 text-center text-xs text-gray-400">
+          LifeFlow — Every Drop Counts. Every Life Matters.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+export default Login

@@ -1,0 +1,144 @@
+const mongoose = require('mongoose')
+const BloodRequest = require('../models/BloodRequest')
+
+// Create a new blood request
+const createBloodRequest = async (req, res) => {
+  try {
+    const {
+      patientName,
+      bloodGroup,
+      units,
+      hospitalName,
+      city,
+      contactNumber,
+      urgency,
+      notes,
+    } = req.body
+
+    // Validate required fields
+    if (
+      !patientName ||
+      !bloodGroup ||
+      units === undefined ||
+      units === null ||
+      units === '' ||
+      !hospitalName ||
+      !city ||
+      !contactNumber
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide all required blood request details',
+      })
+    }
+
+    // Validate units
+    const parsedUnits = Number(units)
+
+    if (!Number.isInteger(parsedUnits) || parsedUnits < 1) {
+      return res.status(400).json({
+        success: false,
+        message: 'Units must be a positive whole number',
+      })
+    }
+
+    // Create blood request
+    const bloodRequest = await BloodRequest.create({
+      patientName,
+      bloodGroup,
+      units: parsedUnits,
+      hospitalName,
+      city,
+      contactNumber,
+      urgency,
+      notes,
+      requestedBy: req.user._id,
+    })
+
+    return res.status(201).json({
+      success: true,
+      message: 'Blood request created successfully',
+      request: bloodRequest,
+    })
+  } catch (error) {
+    console.error('Create blood request error:', error.message)
+
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      })
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while creating blood request',
+    })
+  }
+}
+
+// Get all blood requests
+const getAllBloodRequests = async (req, res) => {
+  try {
+    const requests = await BloodRequest.find()
+      .populate('requestedBy', 'name email role')
+      .sort({ createdAt: -1 })
+
+    return res.status(200).json({
+      success: true,
+      count: requests.length,
+      requests,
+    })
+  } catch (error) {
+    console.error('Get blood requests error:', error.message)
+
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while fetching blood requests',
+    })
+  }
+}
+
+// Get a single blood request by ID
+const getBloodRequestById = async (req, res) => {
+  try {
+    const { id } = req.params
+
+    // Validate MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid blood request ID',
+      })
+    }
+
+    const bloodRequest = await BloodRequest.findById(id)
+      .populate('requestedBy', 'name email role')
+
+    // Check whether request exists
+    if (!bloodRequest) {
+      return res.status(404).json({
+        success: false,
+        message: 'Blood request not found',
+      })
+    }
+
+    return res.status(200).json({
+      success: true,
+      request: bloodRequest,
+    })
+  } catch (error) {
+    console.error('Get blood request error:', error.message)
+
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while fetching blood request',
+    })
+  }
+}
+
+module.exports = {
+  createBloodRequest,
+  getAllBloodRequests,
+  getBloodRequestById,
+}
