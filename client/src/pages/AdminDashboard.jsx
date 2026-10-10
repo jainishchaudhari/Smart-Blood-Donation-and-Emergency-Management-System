@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import {
   ShieldCheck,
   Users,
@@ -8,6 +8,36 @@ import {
 } from 'lucide-react'
 
 function AdminDashboard() {
+  let currentUser = null
+
+  try {
+    const savedUser = localStorage.getItem('lifeflowUser')
+    currentUser = savedUser ? JSON.parse(savedUser) : null
+  } catch {
+    currentUser = null
+  }
+
+  // Login vagar dashboard access na male
+  if (!currentUser) {
+    return <Navigate to="/login" replace />
+  }
+
+  // Role pramane correct dashboard par redirect
+  if (currentUser.role !== 'admin') {
+    const dashboardRoutes = {
+      user: '/user-dashboard',
+      donor: '/donor-dashboard',
+      hospital: '/hospital-dashboard',
+    }
+
+    return (
+      <Navigate
+        to={dashboardRoutes[currentUser.role] || '/login'}
+        replace
+      />
+    )
+  }
+
   const stats = [
     {
       title: 'Total Users',
@@ -47,6 +77,10 @@ function AdminDashboard() {
 
               <p className="mt-2 text-gray-300">
                 Manage LifeFlow users, donors and emergency requests.
+              </p>
+
+              <p className="mt-2 text-sm text-gray-400">
+                Logged in as: {currentUser.email}
               </p>
             </div>
           </div>

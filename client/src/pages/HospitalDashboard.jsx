@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import {
   Hospital,
   Droplet,
@@ -10,6 +10,38 @@ import {
 } from 'lucide-react'
 
 function HospitalDashboard() {
+  // Get demo login information
+  const savedUser = localStorage.getItem('lifeflowUser')
+
+  let currentUser = null
+
+  try {
+    currentUser = savedUser ? JSON.parse(savedUser) : null
+  } catch {
+    currentUser = null
+  }
+
+  // Redirect if not logged in
+  if (!currentUser) {
+    return <Navigate to="/login" replace />
+  }
+
+  // Redirect users with the wrong role
+  if (currentUser.role !== 'hospital') {
+    const dashboardRoutes = {
+      user: '/user-dashboard',
+      donor: '/donor-dashboard',
+      admin: '/admin-dashboard',
+    }
+
+    return (
+      <Navigate
+        to={dashboardRoutes[currentUser.role] || '/login'}
+        replace
+      />
+    )
+  }
+
   const stats = [
     {
       title: 'Blood Requests',
@@ -51,6 +83,7 @@ function HospitalDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8 sm:px-8">
       <div className="mx-auto max-w-7xl">
+
         {/* Header */}
         <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
@@ -65,6 +98,10 @@ function HospitalDashboard() {
 
             <p className="mt-2 text-gray-500">
               Manage blood inventory and emergency requests.
+            </p>
+
+            <p className="mt-2 text-sm text-gray-500">
+              Logged in as: {currentUser.email}
             </p>
           </div>
 
@@ -167,10 +204,7 @@ function HospitalDashboard() {
               to="/show-requests"
               className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
             >
-              <ClipboardList
-                className="mb-4 text-red-600"
-                size={30}
-              />
+              <ClipboardList className="mb-4 text-red-600" size={30} />
 
               <h3 className="font-bold text-gray-800">
                 View Requests
@@ -210,6 +244,7 @@ function HospitalDashboard() {
             transfusion procedures before issuing blood.
           </p>
         </div>
+
       </div>
     </div>
   )

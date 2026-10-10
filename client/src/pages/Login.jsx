@@ -9,39 +9,75 @@ function Login() {
 
     const formData = new FormData(e.currentTarget)
 
-    const email = formData.get('email')
-    const password = formData.get('password')
-    const role = formData.get('role')
+    const email = formData.get('email')?.toString().trim()
+    const password = formData.get('password')?.toString()
+    const role = formData.get('role')?.toString()
 
     if (!email || !password || !role) {
       alert('Please fill in all fields.')
       return
     }
 
-    // Demo navigation only. Real authentication will be added later.
-    if (role === 'user') {
-      navigate('/user-dashboard')
-    } else if (role === 'donor') {
-      navigate('/donor-dashboard')
-    } else if (role === 'hospital') {
-      navigate('/hospital-dashboard')
-    } else if (role === 'admin') {
-      navigate('/admin-dashboard')
+    let registeredUsers = []
+
+    try {
+      registeredUsers = JSON.parse(
+        localStorage.getItem('lifeflowRegisteredUsers') || '[]'
+      )
+
+      if (!Array.isArray(registeredUsers)) {
+        registeredUsers = []
+      }
+    } catch {
+      registeredUsers = []
     }
+
+    const matchedUser = registeredUsers.find(
+      (user) =>
+        user.email?.toLowerCase() === email.toLowerCase() &&
+        user.password === password &&
+        user.role === role
+    )
+
+    if (!matchedUser) {
+      alert(
+        'Invalid email, password, or role. Please register first or check your details.'
+      )
+      return
+    }
+
+    const currentUser = {
+      name: matchedUser.name,
+      email: matchedUser.email,
+      role: matchedUser.role,
+    }
+
+    localStorage.setItem(
+      'lifeflowUser',
+      JSON.stringify(currentUser)
+    )
+
+    const dashboardRoutes = {
+      user: '/user-dashboard',
+      donor: '/donor-dashboard',
+      hospital: '/hospital-dashboard',
+      admin: '/admin-dashboard',
+    }
+
+    navigate(dashboardRoutes[matchedUser.role] || '/login', {
+      replace: true,
+    })
   }
 
   return (
     <div className="flex min-h-[80vh] items-center justify-center bg-red-50 px-4 py-10">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl">
-
-        {/* Logo */}
         <div className="mb-5 flex justify-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
             <HeartPulse size={36} className="text-red-600" />
           </div>
         </div>
 
-        {/* Heading */}
         <h1 className="text-center text-3xl font-bold text-gray-900">
           Welcome Back!
         </h1>
@@ -50,9 +86,7 @@ function Login() {
           Login to your LifeFlow account
         </p>
 
-        {/* Login Form */}
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-
           {/* Email */}
           <div>
             <label
@@ -93,7 +127,7 @@ function Login() {
             />
           </div>
 
-          {/* Role Selection */}
+          {/* Role */}
           <div>
             <label
               htmlFor="role"
@@ -115,7 +149,9 @@ function Login() {
 
               <option value="user">User</option>
               <option value="donor">Donor</option>
-              <option value="hospital">Hospital / Blood Bank</option>
+              <option value="hospital">
+                Hospital / Blood Bank
+              </option>
               <option value="admin">Admin</option>
             </select>
           </div>
@@ -130,16 +166,14 @@ function Login() {
           </button>
         </form>
 
-        {/* Divider */}
         <div className="my-6 flex items-center gap-3">
           <div className="h-px flex-1 bg-gray-200" />
           <span className="text-sm text-gray-400">OR</span>
           <div className="h-px flex-1 bg-gray-200" />
         </div>
 
-        {/* Register Button */}
         <p className="text-center text-sm text-gray-600">
-          Don't have an account?
+          Don&apos;t have an account?
         </p>
 
         <Link
@@ -150,7 +184,6 @@ function Login() {
           Create New Account / Register
         </Link>
 
-        {/* Home Link */}
         <div className="mt-5 text-center">
           <Link
             to="/"
@@ -160,9 +193,8 @@ function Login() {
           </Link>
         </div>
 
-        {/* Footer Text */}
         <p className="mt-6 text-center text-xs text-gray-400">
-          LifeFlow — Every Drop Counts. Every Life Matters.
+          Demo Login — Accounts are stored in this browser only.
         </p>
       </div>
     </div>

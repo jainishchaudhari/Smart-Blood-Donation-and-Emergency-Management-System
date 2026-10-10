@@ -1,23 +1,55 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
-import { Menu, X, Droplet } from 'lucide-react'
+import { Menu, X, Droplet, LogOut } from 'lucide-react'
 
 function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const navigate = useNavigate()
+
+  let currentUser = null
+
+  try {
+    const savedUser = localStorage.getItem('lifeflowUser')
+    currentUser = savedUser ? JSON.parse(savedUser) : null
+  } catch {
+    currentUser = null
+  }
+
+  const dashboardRoutes = {
+    user: '/user-dashboard',
+    donor: '/donor-dashboard',
+    hospital: '/hospital-dashboard',
+    admin: '/admin-dashboard',
+  }
+
+  const dashboardPath = currentUser
+    ? dashboardRoutes[currentUser.role] || '/login'
+    : '/login'
 
   const navLinks = [
     { name: 'Home', path: '/' },
-    { name: 'Find Blood', path: '/find-blood' },
-    { name: 'Requests', path: '/show-requests' },
-    { name: 'Dashboard', path: '/dashboard' },
+    ...(currentUser
+      ? [
+          { name: 'Find Blood', path: '/find-blood' },
+          { name: 'Requests', path: '/show-requests' },
+        ]
+      : []),
   ]
+
+  const handleLogout = () => {
+    localStorage.removeItem('lifeflowUser')
+    setMenuOpen(false)
+    navigate('/login', { replace: true })
+  }
 
   return (
     <nav className="sticky top-0 z-50 bg-white shadow-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-8">
+
         {/* Logo */}
         <Link
           to="/"
+          onClick={() => setMenuOpen(false)}
           className="flex items-center gap-2 text-2xl font-bold text-red-600"
         >
           <Droplet size={28} fill="currentColor" />
@@ -36,19 +68,41 @@ function Navbar() {
             </Link>
           ))}
 
-          <Link
-            to="/login"
-            className="font-medium text-gray-700 transition hover:text-red-600"
-          >
-            Login
-          </Link>
+          {currentUser ? (
+            <>
+              <Link
+                to={dashboardPath}
+                className="font-medium text-gray-700 transition hover:text-red-600"
+              >
+                Dashboard
+              </Link>
 
-          <Link
-            to="/register"
-            className="rounded-lg bg-red-600 px-4 py-2 font-medium text-white transition hover:bg-red-700"
-          >
-            Register
-          </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex items-center gap-2 font-medium text-gray-700 transition hover:text-red-600"
+              >
+                <LogOut size={18} />
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className="font-medium text-gray-700 transition hover:text-red-600"
+              >
+                Login
+              </Link>
+
+              <Link
+                to="/register"
+                className="rounded-lg bg-red-600 px-4 py-2 font-medium text-white transition hover:bg-red-700"
+              >
+                Register
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -66,6 +120,7 @@ function Navbar() {
       {/* Mobile Navigation */}
       {menuOpen && (
         <div className="flex flex-col gap-4 border-t border-gray-100 bg-white px-6 py-5 md:hidden">
+
           {navLinks.map((link) => (
             <Link
               key={link.path}
@@ -77,21 +132,44 @@ function Navbar() {
             </Link>
           ))}
 
-          <Link
-            to="/login"
-            onClick={() => setMenuOpen(false)}
-            className="font-medium text-gray-700 transition hover:text-red-600"
-          >
-            Login
-          </Link>
+          {currentUser ? (
+            <>
+              <Link
+                to={dashboardPath}
+                onClick={() => setMenuOpen(false)}
+                className="font-medium text-gray-700 transition hover:text-red-600"
+              >
+                Dashboard
+              </Link>
 
-          <Link
-            to="/register"
-            onClick={() => setMenuOpen(false)}
-            className="w-fit rounded-lg bg-red-600 px-4 py-2 font-medium text-white transition hover:bg-red-700"
-          >
-            Register
-          </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex w-fit items-center gap-2 font-medium text-gray-700 transition hover:text-red-600"
+              >
+                <LogOut size={18} />
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                onClick={() => setMenuOpen(false)}
+                className="font-medium text-gray-700 transition hover:text-red-600"
+              >
+                Login
+              </Link>
+
+              <Link
+                to="/register"
+                onClick={() => setMenuOpen(false)}
+                className="w-fit rounded-lg bg-red-600 px-4 py-2 font-medium text-white transition hover:bg-red-700"
+              >
+                Register
+              </Link>
+            </>
+          )}
         </div>
       )}
     </nav>

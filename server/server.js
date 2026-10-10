@@ -2,8 +2,6 @@ const express = require('express')
 const cors = require('cors')
 require('dotenv').config()
 
-const connectDB = require('./config/db')
-
 const authRoutes = require('./routes/authRoutes')
 const userRoutes = require('./routes/userRoutes')
 const donorRoutes = require('./routes/donorRoutes')
@@ -34,13 +32,8 @@ app.use('/api/hospitals', hospitalRoutes)
 // Server port
 const PORT = process.env.PORT || 5000
 
-// Connect MongoDB and start server
-const startServer = async () => {
-  await connectDB()
-
-  app.listen(PORT, () => {
-    console.log(`LifeFlow server running on port ${PORT}`)
-  })
-}
-
-startServer()
+// Start server without MongoDB for now
+app.listen(PORT, () => {
+  console.log(`LifeFlow server running on port ${PORT}`)
+  console.log('MongoDB setup is pending')
+})

@@ -1,12 +1,91 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 function Register() {
+  const navigate = useNavigate()
+
   const handleSubmit = (e) => {
     e.preventDefault()
 
-    alert(
-      'Registration form submitted! Backend integration will be added later.'
+    const formData = new FormData(e.currentTarget)
+
+    const name = formData.get('name')?.toString().trim()
+    const email = formData.get('email')?.toString().trim()
+    const password = formData.get('password')?.toString()
+    const role = formData.get('role')?.toString()
+
+    if (!name || !email || !password || !role) {
+      alert('Please fill in all fields.')
+      return
+    }
+
+    if (password.length < 6) {
+      alert('Password must contain at least 6 characters.')
+      return
+    }
+
+    const dashboardRoutes = {
+      user: '/user-dashboard',
+      donor: '/donor-dashboard',
+      hospital: '/hospital-dashboard',
+    }
+
+    if (!dashboardRoutes[role]) {
+      alert('Please select a valid role.')
+      return
+    }
+
+    // Get previously registered accounts
+    let registeredUsers = []
+
+    try {
+      registeredUsers = JSON.parse(
+        localStorage.getItem('lifeflowRegisteredUsers') || '[]'
+      )
+
+      if (!Array.isArray(registeredUsers)) {
+        registeredUsers = []
+      }
+    } catch {
+      registeredUsers = []
+    }
+
+    // Check if email is already registered
+    const existingUser = registeredUsers.find(
+      (user) => user.email?.toLowerCase() === email.toLowerCase()
     )
+
+    if (existingUser) {
+      alert('This email is already registered. Please login instead.')
+      return
+    }
+
+    // Save the new account for future login
+    const newUser = {
+      name,
+      email,
+      password,
+      role,
+    }
+
+    registeredUsers.push(newUser)
+
+    localStorage.setItem(
+      'lifeflowRegisteredUsers',
+      JSON.stringify(registeredUsers)
+    )
+
+    // Save current login session without password
+    const currentUser = {
+      name,
+      email,
+      role,
+    }
+
+    localStorage.setItem('lifeflowUser', JSON.stringify(currentUser))
+
+    alert('Account created successfully! Welcome to LifeFlow.')
+
+    navigate(dashboardRoutes[role], { replace: true })
   }
 
   return (
@@ -21,7 +100,6 @@ function Register() {
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-          {/* Full Name */}
           <div>
             <label
               htmlFor="name"
@@ -41,7 +119,6 @@ function Register() {
             />
           </div>
 
-          {/* Email Address */}
           <div>
             <label
               htmlFor="email"
@@ -61,7 +138,6 @@ function Register() {
             />
           </div>
 
-          {/* Password */}
           <div>
             <label
               htmlFor="password"
@@ -86,7 +162,6 @@ function Register() {
             </p>
           </div>
 
-          {/* Role Selection */}
           <div>
             <label
               htmlFor="role"
@@ -108,13 +183,10 @@ function Register() {
 
               <option value="user">User</option>
               <option value="donor">Donor</option>
-              <option value="hospital">
-                Hospital / Blood Bank
-              </option>
+              <option value="hospital">Hospital / Blood Bank</option>
             </select>
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             className="w-full rounded-lg bg-red-600 py-3 font-semibold text-white transition hover:bg-red-700"
@@ -123,7 +195,6 @@ function Register() {
           </button>
         </form>
 
-        {/* Login Link */}
         <p className="mt-6 text-center text-sm text-gray-600">
           Already have an account?{' '}
           <Link
@@ -135,7 +206,7 @@ function Register() {
         </p>
 
         <p className="mt-5 text-center text-xs text-gray-400">
-          LifeFlow — Every Drop Counts. Every Life Matters.
+          Demo Registration Only — Accounts are stored in this browser.
         </p>
       </div>
     </div>
