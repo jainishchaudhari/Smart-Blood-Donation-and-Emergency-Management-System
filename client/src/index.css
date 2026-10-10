@@ -1,22 +1,110 @@
-
 @import "tailwindcss";
 
-:root {
-  color-scheme: dark;
+/* ---------- Design tokens ---------- */
+@theme {
+  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque", "Figtree", ui-sans-serif, system-ui,
+    sans-serif;
+
+  --color-ink: #14202b;
+  --color-muted: #566473;
+  --color-line: #e1e5ea;
+  --color-paper: #f6f7f9;
+
+  --color-blood: #c8102e;
+  --color-blood-deep: #9d0b23;
+  --color-plasma: #fdecee;
+
+  --color-ok: #0f766e;
+  --color-ok-soft: #e3f4f1;
+  --color-warn: #b45309;
+  --color-warn-soft: #fdf1e1;
 }
 
-html,
-body,
-#root {
-  background-color: #080a10;
+/* ---------- Base ---------- */
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    overscroll-behavior-y: none;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-blood);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      transition-duration: 0.01ms !important;
+      animation: none !important;
+    }
+  }
 }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-}
+/* ---------- Reusable components ---------- */
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply bg-blood text-white hover:bg-blood-deep;
+  }
+  .btn-secondary {
+    @apply border border-ink/20 bg-white text-ink hover:border-ink/40 hover:bg-paper;
+  }
+  .btn-light {
+    @apply bg-white text-ink hover:bg-plasma;
+  }
+  .btn-sm {
+    @apply px-3.5 py-2;
+  }
 
-/* optional: scroll bounce band kare. Bounce joiye to aa part kadhi nakho */
-html {
-  overscroll-behavior-y: none;
+  .card {
+    @apply rounded-xl border border-line bg-white;
+  }
+
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-ink;
+  }
+  .field {
+    @apply w-full rounded-lg border border-ink/20 bg-white px-4 py-3 text-base text-ink transition-colors placeholder:text-muted/70 hover:border-ink/40 focus:border-blood focus:outline-2 focus:outline-offset-0 focus:outline-blood/25;
+  }
+  .hint {
+    @apply mt-1.5 text-xs text-muted;
+  }
+
+  /* Selectable chips (blood group, filters) */
+  .chip {
+    @apply inline-flex min-w-11 items-center justify-center rounded-lg border border-ink/20 bg-white px-3 py-2 text-sm font-semibold text-ink transition-colors hover:border-ink/50;
+  }
+  .chip[aria-pressed="true"],
+  .chip[aria-checked="true"] {
+    @apply border-blood bg-blood text-white;
+  }
 }

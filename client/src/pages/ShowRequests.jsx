@@ -1,6 +1,14 @@
-
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertCircle, MapPin, Droplet, Phone } from 'lucide-react'
+import { Droplet, Hospital, Phone, CalendarDays, Plus, ClipboardList } from 'lucide-react'
+import {
+  BloodTag,
+  DemoNote,
+  EmptyState,
+  PageContainer,
+  PageHeader,
+  Pill,
+} from '../components/ui'
 
 const sampleRequests = [
   {
@@ -38,99 +46,132 @@ const sampleRequests = [
   },
 ]
 
+const urgencyOrder = { Critical: 0, High: 1, Normal: 2 }
+
+const urgencyStyle = {
+  Critical: { tone: 'critical', border: 'border-l-blood' },
+  High: { tone: 'warn', border: 'border-l-warn' },
+  Normal: { tone: 'ok', border: 'border-l-ok' },
+}
+
+const formatDate = (value) =>
+  new Date(value).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
+
 function ShowRequests() {
+  const [urgency, setUrgency] = useState('All')
+
+  // Most urgent first, then newest first
+  const visibleRequests = sampleRequests
+    .filter((request) => urgency === 'All' || request.urgency === urgency)
+    .sort(
+      (a, b) =>
+        urgencyOrder[a.urgency] - urgencyOrder[b.urgency] ||
+        b.date.localeCompare(a.date)
+    )
+
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-10">
-      <div className="mx-auto max-w-6xl">
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Emergency Blood Requests
-            </h1>
-            <p className="mt-2 text-gray-600">
-              View blood requests that need attention.
-            </p>
-          </div>
-
-          <Link
-            to="/emergency-request"
-            className="inline-flex items-center justify-center rounded-lg bg-red-600 px-5 py-3 font-semibold text-white hover:bg-red-700"
-          >
-            + Create Request
+    <PageContainer>
+      <PageHeader
+        title="Emergency blood requests"
+        text="Open requests, with the most urgent shown first."
+        action={
+          <Link to="/emergency-request" className="btn btn-primary">
+            <Plus size={18} />
+            Create request
           </Link>
-        </div>
+        }
+      />
 
-        <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
-          Demo data: these requests are sample entries, not real patient requests.
-        </div>
+      <div
+        role="group"
+        aria-label="Filter by urgency"
+        className="mt-8 flex flex-wrap gap-2"
+      >
+        {['All', 'Critical', 'High', 'Normal'].map((item) => (
+          <button
+            key={item}
+            type="button"
+            aria-pressed={urgency === item}
+            onClick={() => setUrgency(item)}
+            className="chip"
+          >
+            {item}
+          </button>
+        ))}
+      </div>
 
-        <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {sampleRequests.map((request) => (
-            <div
-              key={request.id}
-              className="rounded-xl bg-white p-6 shadow transition hover:shadow-lg"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900">
-                    {request.patientName}
-                  </h2>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Request #{request.id}
-                  </p>
+      <ul className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        {visibleRequests.map((request) => (
+          <li
+            key={request.id}
+            className={`card flex flex-col border-l-4 p-5 ${
+              urgencyStyle[request.urgency].border
+            }`}
+          >
+            <div className="flex items-start gap-4">
+              <BloodTag group={request.bloodGroup} size="lg" />
+
+              <div className="min-w-0">
+                <h2 className="text-lg font-semibold">{request.patientName}</h2>
+                <p className="mt-0.5 text-sm text-muted">
+                  Request #{request.id}
+                </p>
+                <div className="mt-2">
+                  <Pill tone={urgencyStyle[request.urgency].tone}>
+                    {request.urgency}
+                  </Pill>
                 </div>
-
-                <span className="rounded-lg bg-red-100 px-3 py-2 text-lg font-bold text-red-700">
-                  {request.bloodGroup}
-                </span>
-              </div>
-
-              <div className="mt-5 space-y-3 text-gray-600">
-                <p className="flex items-center gap-2">
-                  <Droplet size={18} className="text-red-600" />
-                  {request.units} unit(s) required
-                </p>
-
-                <p className="flex items-start gap-2">
-                  <MapPin size={18} className="mt-1 shrink-0 text-red-600" />
-                  <span>
-                    {request.hospital}
-                    <br />
-                    {request.city}
-                  </span>
-                </p>
-
-                <p className="flex items-center gap-2">
-                  <Phone size={18} className="text-red-600" />
-                  {request.contact}
-                </p>
-
-                <p className="text-sm">Date: {request.date}</p>
-              </div>
-
-              <div className="mt-5 flex items-center justify-between border-t pt-4">
-                <span
-                  className={`rounded-full px-3 py-1 text-sm font-semibold ${
-                    request.urgency === 'Critical'
-                      ? 'bg-red-100 text-red-700'
-                      : request.urgency === 'High'
-                      ? 'bg-orange-100 text-orange-700'
-                      : 'bg-green-100 text-green-700'
-                  }`}
-                >
-                  {request.urgency}
-                </span>
-
-                <span className="flex items-center gap-1 text-sm text-gray-500">
-                  <AlertCircle size={16} />
-                  Demo
-                </span>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
-    </div>
+
+            <ul className="mt-5 space-y-2.5 text-sm">
+              <li className="flex items-center gap-2.5">
+                <Droplet size={17} className="shrink-0 text-blood" />
+                <span>
+                  <span className="font-semibold">{request.units}</span>{' '}
+                  {request.units === 1 ? 'unit' : 'units'} required
+                </span>
+              </li>
+              <li className="flex items-start gap-2.5">
+                <Hospital size={17} className="mt-0.5 shrink-0 text-blood" />
+                <span>
+                  {request.hospital}, {request.city}
+                </span>
+              </li>
+              <li className="flex items-center gap-2.5 text-muted">
+                <CalendarDays size={17} className="shrink-0 text-blood" />
+                {formatDate(request.date)}
+              </li>
+            </ul>
+
+            <a
+              href={`tel:${request.contact}`}
+              className="btn btn-secondary mt-5 w-full"
+            >
+              <Phone size={16} />
+              Call {request.contact}
+            </a>
+          </li>
+        ))}
+      </ul>
+
+      {visibleRequests.length === 0 && (
+        <EmptyState
+          icon={ClipboardList}
+          title="No requests at this urgency"
+          text="Choose another urgency level to see more requests."
+        />
+      )}
+
+      <DemoNote>
+        Demo data: these requests are samples, not real patient requests.
+      </DemoNote>
+    </PageContainer>
   )
 }
 

@@ -1,10 +1,20 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { AuthShell, FormError, RolePicker } from '../components/AuthShell'
+
+const roles = [
+  { value: 'user', label: 'User', hint: 'Find blood and post requests' },
+  { value: 'donor', label: 'Donor', hint: 'Respond to requests' },
+  { value: 'hospital', label: 'Hospital / Blood bank', hint: 'Manage stock and requests' },
+]
 
 function Register() {
   const navigate = useNavigate()
+  const [error, setError] = useState('')
 
   const handleSubmit = (e) => {
     e.preventDefault()
+    setError('')
 
     const formData = new FormData(e.currentTarget)
 
@@ -14,12 +24,12 @@ function Register() {
     const role = formData.get('role')?.toString()
 
     if (!name || !email || !password || !role) {
-      alert('Please fill in all fields.')
+      setError('Please fill in all fields.')
       return
     }
 
     if (password.length < 6) {
-      alert('Password must contain at least 6 characters.')
+      setError('Password must contain at least 6 characters.')
       return
     }
 
@@ -30,12 +40,12 @@ function Register() {
     }
 
     if (!dashboardRoutes[role]) {
-      alert('Please select a valid role.')
+      setError('Please select a valid role.')
       return
     }
 
     // Get previously registered accounts
-    let registeredUsers = []
+    let registeredUsers
 
     try {
       registeredUsers = JSON.parse(
@@ -55,7 +65,7 @@ function Register() {
     )
 
     if (existingUser) {
-      alert('This email is already registered. Please login instead.')
+      setError('This email is already registered. Please login instead.')
       return
     }
 
@@ -83,133 +93,85 @@ function Register() {
 
     localStorage.setItem('lifeflowUser', JSON.stringify(currentUser))
 
-    alert('Account created successfully! Welcome to LifeFlow.')
-
     navigate(dashboardRoutes[role], { replace: true })
   }
 
   return (
-    <div className="flex min-h-[70vh] items-center justify-center bg-red-50 px-4 py-10">
-      <div className="w-full max-w-lg rounded-2xl bg-white p-8 shadow-lg">
-        <h1 className="text-center text-3xl font-bold text-gray-900">
-          Create Account
-        </h1>
+    <AuthShell
+      title="Create your account"
+      text="Join LifeFlow and help save lives."
+    >
+      <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+        <div>
+          <label htmlFor="name" className="label">
+            Full name
+          </label>
+          <input
+            id="name"
+            name="name"
+            type="text"
+            placeholder="Enter your full name"
+            autoComplete="name"
+            required
+            className="field"
+          />
+        </div>
 
-        <p className="mt-2 text-center text-gray-500">
-          Join LifeFlow and help save lives
-        </p>
+        <div>
+          <label htmlFor="email" className="label">
+            Email address
+          </label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            placeholder="you@example.com"
+            autoComplete="email"
+            required
+            className="field"
+          />
+        </div>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-          <div>
-            <label
-              htmlFor="name"
-              className="mb-2 block text-sm font-medium text-gray-700"
-            >
-              Full Name
-            </label>
+        <div>
+          <label htmlFor="password" className="label">
+            Password
+          </label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            placeholder="Create a password"
+            autoComplete="new-password"
+            minLength={6}
+            required
+            className="field"
+          />
+          <p className="hint">Use at least 6 characters.</p>
+        </div>
 
-            <input
-              id="name"
-              name="name"
-              type="text"
-              placeholder="Enter your full name"
-              autoComplete="name"
-              required
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-red-500 focus:ring-2 focus:ring-red-100"
-            />
-          </div>
+        <RolePicker roles={roles} legend="Register as" />
 
-          <div>
-            <label
-              htmlFor="email"
-              className="mb-2 block text-sm font-medium text-gray-700"
-            >
-              Email Address
-            </label>
+        <FormError message={error} />
 
-            <input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="Enter your email"
-              autoComplete="email"
-              required
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-red-500 focus:ring-2 focus:ring-red-100"
-            />
-          </div>
+        <button type="submit" className="btn btn-primary w-full">
+          Create account
+        </button>
+      </form>
 
-          <div>
-            <label
-              htmlFor="password"
-              className="mb-2 block text-sm font-medium text-gray-700"
-            >
-              Password
-            </label>
+      <p className="mt-6 text-center text-sm text-muted">
+        Already have an account?{' '}
+        <Link
+          to="/login"
+          className="font-semibold text-blood hover:text-blood-deep"
+        >
+          Login
+        </Link>
+      </p>
 
-            <input
-              id="password"
-              name="password"
-              type="password"
-              placeholder="Create a password"
-              autoComplete="new-password"
-              minLength={6}
-              required
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-red-500 focus:ring-2 focus:ring-red-100"
-            />
-
-            <p className="mt-1 text-xs text-gray-500">
-              Password must contain at least 6 characters.
-            </p>
-          </div>
-
-          <div>
-            <label
-              htmlFor="role"
-              className="mb-2 block text-sm font-medium text-gray-700"
-            >
-              Register As
-            </label>
-
-            <select
-              id="role"
-              name="role"
-              defaultValue=""
-              required
-              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 outline-none transition focus:border-red-500 focus:ring-2 focus:ring-red-100"
-            >
-              <option value="" disabled>
-                Select your role
-              </option>
-
-              <option value="user">User</option>
-              <option value="donor">Donor</option>
-              <option value="hospital">Hospital / Blood Bank</option>
-            </select>
-          </div>
-
-          <button
-            type="submit"
-            className="w-full rounded-lg bg-red-600 py-3 font-semibold text-white transition hover:bg-red-700"
-          >
-            Create Account
-          </button>
-        </form>
-
-        <p className="mt-6 text-center text-sm text-gray-600">
-          Already have an account?{' '}
-          <Link
-            to="/login"
-            className="font-semibold text-red-600 hover:text-red-700"
-          >
-            Login
-          </Link>
-        </p>
-
-        <p className="mt-5 text-center text-xs text-gray-400">
-          Demo Registration Only — Accounts are stored in this browser.
-        </p>
-      </div>
-    </div>
+      <p className="hint mt-4 text-center">
+        Demo registration: accounts are stored in this browser only.
+      </p>
+    </AuthShell>
   )
 }
 

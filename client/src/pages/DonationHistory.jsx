@@ -1,6 +1,13 @@
-
 import { useState } from 'react'
-import { Droplet, CalendarDays, MapPin, Clock } from 'lucide-react'
+import { Droplet, CalendarDays, Hospital, Clock } from 'lucide-react'
+import {
+  BloodTag,
+  DemoNote,
+  EmptyState,
+  PageContainer,
+  PageHeader,
+  Pill,
+} from '../components/ui'
 
 const sampleDonations = [
   {
@@ -32,6 +39,14 @@ const sampleDonations = [
   },
 ]
 
+const formatDate = (value) =>
+  new Date(value).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
+
 function DonationHistory() {
   const [filter, setFilter] = useState('All')
 
@@ -46,112 +61,93 @@ function DonationHistory() {
   )
 
   return (
-    <section className="min-h-screen bg-gray-50 px-4 py-10">
-      <div className="mx-auto max-w-6xl">
-        <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">
-          Donation History
-        </h1>
+    <PageContainer>
+      <PageHeader
+        title="Donation history"
+        text="Review your past blood donation activity."
+      />
 
-        <p className="mt-2 text-gray-600">
-          Review your past blood donation activity.
-        </p>
-
-        <div className="mt-8 grid gap-5 sm:grid-cols-2">
-          <div className="rounded-xl bg-white p-6 shadow">
-            <p className="text-sm font-medium text-gray-500">
-              Total Donations
-            </p>
-            <h2 className="mt-2 text-3xl font-bold text-red-600">
-              {sampleDonations.length}
-            </h2>
-          </div>
-
-          <div className="rounded-xl bg-white p-6 shadow">
-            <p className="text-sm font-medium text-gray-500">
-              Total Units Donated
-            </p>
-            <h2 className="mt-2 text-3xl font-bold text-red-600">
-              {totalUnits}
-            </h2>
-          </div>
+      <dl className="card mt-8 grid grid-cols-2 overflow-hidden">
+        <div className="p-5 sm:p-6">
+          <dt className="text-sm text-muted">Total donations</dt>
+          <dd className="mt-1 font-display text-3xl font-bold tabular-nums text-blood">
+            {sampleDonations.length}
+          </dd>
         </div>
 
-        <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
-          <h2 className="text-xl font-bold text-gray-900">
-            Past Donations
-          </h2>
-
-          <select
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            className="rounded-lg border border-gray-300 bg-white px-4 py-3"
-          >
-            <option value="All">All Donations</option>
-            <option value="Completed">Completed</option>
-          </select>
+        <div className="border-l border-line p-5 sm:p-6">
+          <dt className="text-sm text-muted">Total units donated</dt>
+          <dd className="mt-1 font-display text-3xl font-bold tabular-nums text-blood">
+            {totalUnits}
+          </dd>
         </div>
+      </dl>
 
-        <div className="mt-5 space-y-4">
-          {filteredDonations.map((donation) => (
-            <div
-              key={donation.id}
-              className="rounded-xl bg-white p-6 shadow"
+      <div className="mb-4 mt-10 flex flex-wrap items-center justify-between gap-4">
+        <h2 className="text-xl font-semibold">Past donations</h2>
+
+        <div role="group" aria-label="Filter by status" className="flex gap-2">
+          {['All', 'Completed'].map((item) => (
+            <button
+              key={item}
+              type="button"
+              aria-pressed={filter === item}
+              onClick={() => setFilter(item)}
+              className="chip"
             >
-              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                <div className="flex items-start gap-4">
-                  <div className="rounded-xl bg-red-100 p-3">
-                    <Droplet className="text-red-600" size={28} />
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900">
-                      Blood Donation
-                    </h3>
-
-                    <p className="mt-1 text-gray-600">
-                      Blood Group: {donation.bloodGroup}
-                    </p>
-
-                    <p className="mt-1 text-gray-600">
-                      Units donated: {donation.units}
-                    </p>
-                  </div>
-                </div>
-
-                <span className="w-fit rounded-full bg-green-100 px-4 py-2 text-sm font-semibold text-green-700">
-                  {donation.status}
-                </span>
-              </div>
-
-              <div className="mt-5 grid gap-3 border-t pt-4 text-sm text-gray-600 sm:grid-cols-2">
-                <p className="flex items-center gap-2">
-                  <CalendarDays size={17} className="text-red-600" />
-                  {donation.date}
-                </p>
-
-                <p className="flex items-center gap-2">
-                  <MapPin size={17} className="text-red-600" />
-                  {donation.hospital}, {donation.city}
-                </p>
-              </div>
-            </div>
+              {item}
+            </button>
           ))}
         </div>
-
-        {filteredDonations.length === 0 && (
-          <div className="mt-6 rounded-xl bg-white p-8 text-center shadow">
-            <Clock className="mx-auto text-gray-400" size={36} />
-            <p className="mt-3 text-gray-600">
-              No donations found.
-            </p>
-          </div>
-        )}
-
-        <p className="mt-8 text-center text-sm text-gray-500">
-          Demo only: all donation records are sample data, not actual donation history.
-        </p>
       </div>
-    </section>
+
+      <ul className="space-y-3">
+        {filteredDonations.map((donation) => (
+          <li
+            key={donation.id}
+            className="card flex flex-col gap-4 p-5 sm:flex-row sm:items-center"
+          >
+            <BloodTag group={donation.bloodGroup} size="lg" />
+
+            <div className="min-w-0 flex-1">
+              <h3 className="text-lg font-semibold">Blood donation</h3>
+
+              <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1.5 text-sm text-muted">
+                <span className="flex items-center gap-2">
+                  <CalendarDays size={16} className="text-blood" />
+                  {formatDate(donation.date)}
+                </span>
+
+                <span className="flex items-center gap-2">
+                  <Hospital size={16} className="text-blood" />
+                  {donation.hospital}, {donation.city}
+                </span>
+
+                <span className="flex items-center gap-2">
+                  <Droplet size={16} className="text-blood" />
+                  {donation.units} {donation.units === 1 ? 'unit' : 'units'}
+                </span>
+              </div>
+            </div>
+
+            <Pill tone="ok">{donation.status}</Pill>
+          </li>
+        ))}
+      </ul>
+
+      {filteredDonations.length === 0 && (
+        <EmptyState
+          icon={Clock}
+          title="No donations found"
+          text="Donations you complete will appear here."
+        />
+      )}
+
+      <DemoNote>
+        Demo data: all donation records are samples, not actual donation
+        history.
+      </DemoNote>
+    </PageContainer>
   )
 }
 
