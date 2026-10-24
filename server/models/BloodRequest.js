@@ -1,3 +1,4 @@
+
 const mongoose = require('mongoose')
 
 const bloodRequestSchema = new mongoose.Schema(
@@ -32,14 +33,12 @@ const bloodRequestSchema = new mongoose.Schema(
       trim: true,
     },
 
-    // New field for area-wise blood request search
     area: {
       type: String,
       required: true,
       trim: true,
     },
 
-    // Selected map coordinates
     latitude: {
       type: Number,
       min: -90,
@@ -76,15 +75,20 @@ const bloodRequestSchema = new mongoose.Schema(
       required: true,
     },
 
+    // Donor who accepts this blood request
+    acceptedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+
     notes: {
       type: String,
       default: '',
       trim: true,
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 )
 
 const BloodRequest = mongoose.model('BloodRequest', bloodRequestSchema)

@@ -1,10 +1,11 @@
-const express = require('express')
 
+const express = require('express')
 const router = express.Router()
 
 const {
   getHospitalDashboard,
   getHospitalRequests,
+  createDonationFromRequest,
 } = require('../controllers/hospitalController')
 
 const { protect, authorizeRoles } = require('../middleware/authMiddleware')
@@ -17,12 +18,20 @@ router.get(
   getHospitalDashboard
 )
 
-// Get hospital's blood requests
+// Get accepted blood requests for the logged-in hospital
 router.get(
   '/requests',
   protect,
   authorizeRoles('hospital'),
   getHospitalRequests
+)
+
+// Create a scheduled donation from an accepted blood request
+router.post(
+  '/requests/:id/donations',
+  protect,
+  authorizeRoles('hospital'),
+  createDonationFromRequest
 )
 
 module.exports = router

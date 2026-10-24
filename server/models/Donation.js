@@ -2,10 +2,18 @@ const mongoose = require('mongoose')
 
 const donationSchema = new mongoose.Schema(
   {
+    // Donor linked to this donation, if assigned
     donor: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      default: null,
+    },
+
+    // Blood request that this donation fulfills
+    bloodRequest: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'BloodRequest',
+      default: null,
     },
 
     bloodGroup: {
@@ -53,6 +61,18 @@ const donationSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+  }
+)
+
+// Prevent multiple donation records for the same blood request.
+// Existing donations without a bloodRequest reference are unaffected.
+donationSchema.index(
+  { bloodRequest: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      bloodRequest: { $type: 'objectId' },
+    },
   }
 )
 

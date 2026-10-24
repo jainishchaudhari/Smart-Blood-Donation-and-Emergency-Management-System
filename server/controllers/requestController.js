@@ -178,72 +178,73 @@ const getBloodRequestById = async (req, res) => {
 };
 
 // Donor accepts a pending blood request
+
 const acceptBloodRequest = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params
 
-    // Validate MongoDB ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
-        message: "Invalid blood request ID",
-      });
+        message: 'Invalid blood request ID',
+      })
     }
 
-    const bloodRequest = await BloodRequest.findById(id);
+    const request = await BloodRequest.findById(id)
 
-    if (!bloodRequest) {
+    if (!request) {
       return res.status(404).json({
         success: false,
-        message: "Blood request not found",
-      });
+        message: 'Blood request not found',
+      })
     }
 
-    // Only pending requests can be accepted
-    if (bloodRequest.status !== "pending") {
-      return res.status(400).json({
+    if (request.status !== 'pending') {
+      return res.status(409).json({
         success: false,
-        message: "Only pending requests can be accepted",
-      });
+        message: 'This blood request is no longer available',
+      })
     }
 
-    // Atomically accept the request so two donors cannot
-    // accept the same pending request simultaneously.
     const acceptedRequest = await BloodRequest.findOneAndUpdate(
       {
         _id: id,
-        status: "pending",
+        status: 'pending',
       },
       {
-        $set: { status: "accepted" },
+        $set: {
+          status: 'accepted',
+          acceptedBy: req.user._id,
+        },
       },
       {
         new: true,
         runValidators: true,
-      },
-    ).populate("requestedBy", "name email role");
+      }
+    ).populate('acceptedBy', 'name email bloodGroup')
 
     if (!acceptedRequest) {
       return res.status(409).json({
         success: false,
-        message: "This request has already been accepted or updated",
-      });
+        message: 'This blood request has already been accepted',
+      })
     }
 
     return res.status(200).json({
       success: true,
-      message: "Blood request accepted successfully",
+      message: 'Blood request accepted successfully',
       request: acceptedRequest,
-    });
+    })
   } catch (error) {
-    console.error("Accept blood request error:", error.message);
+    console.error('Accept blood request error:', error.message)
 
     return res.status(500).json({
       success: false,
-      message: "Server error while accepting blood request",
-    });
+      message: 'Server error while accepting blood request',
+    })
   }
-};
+}
+
 
 module.exports = {
   createBloodRequest,
