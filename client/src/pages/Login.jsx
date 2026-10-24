@@ -3,18 +3,26 @@ import { Link, useNavigate } from 'react-router-dom'
 import { LogIn } from 'lucide-react'
 import { AuthShell, FormError, RolePicker } from '../components/AuthShell'
 
+const API_URL = 'http://localhost:5000/api/auth'
+
 const roles = [
   { value: 'user', label: 'User', hint: 'Find blood and post requests' },
   { value: 'donor', label: 'Donor', hint: 'Respond to requests' },
-  { value: 'hospital', label: 'Hospital / Blood bank', hint: 'Manage stock and requests' },
+  {
+    value: 'hospital',
+    label: 'Hospital / Blood bank',
+    hint: 'Manage stock and requests',
+  },
   { value: 'admin', label: 'Admin', hint: 'Oversee the platform' },
 ]
 
 function Login() {
   const navigate = useNavigate()
-  const [error, setError] = useState('')
 
-  const handleSubmit = (e) => {
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
 
@@ -29,64 +37,81 @@ function Login() {
       return
     }
 
-    let registeredUsers
-
     try {
-      registeredUsers = JSON.parse(
-        localStorage.getItem('lifeflowRegisteredUsers') || '[]'
-      )
+      setLoading(true)
 
-      if (!Array.isArray(registeredUsers)) {
-        registeredUsers = []
+      const response = await fetch(`${API_URL}/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        setError(data.message || 'Login failed. Please try again.')
+        return
       }
-    } catch {
-      registeredUsers = []
-    }
 
-    const matchedUser = registeredUsers.find(
-      (user) =>
-        user.email?.toLowerCase() === email.toLowerCase() &&
-        user.password === password &&
-        user.role === role
-    )
+      // Verify selected role
+      if (data.user.role !== role) {
+        setError(
+          `This account is registered as ${data.user.role}. Please select the correct role.`
+        )
+        return
+      }
 
-    if (!matchedUser) {
-      setError(
-        'Invalid email, password or role. Check your details, or register first.'
+      // Store authentication details
+      localStorage.setItem('lifeflowToken', data.token)
+
+      localStorage.setItem(
+        'lifeflowUser',
+        JSON.stringify({
+          id: data.user.id,
+          name: data.user.name,
+          email: data.user.email,
+          role: data.user.role,
+        })
       )
-      return
+
+      // Role-based dashboard navigation
+      const dashboardRoutes = {
+        user: '/user-dashboard',
+        donor: '/donor-dashboard',
+        hospital: '/hospital-dashboard',
+        admin: '/admin-dashboard',
+      }
+
+      navigate(dashboardRoutes[data.user.role] || '/login', {
+        replace: true,
+      })
+    } catch (err) {
+      console.error('Login error:', err)
+
+      setError(
+        'Unable to connect to the server. Please check that the LifeFlow backend is running.'
+      )
+    } finally {
+      setLoading(false)
     }
-
-    const currentUser = {
-      name: matchedUser.name,
-      email: matchedUser.email,
-      role: matchedUser.role,
-    }
-
-    localStorage.setItem(
-      'lifeflowUser',
-      JSON.stringify(currentUser)
-    )
-
-    const dashboardRoutes = {
-      user: '/user-dashboard',
-      donor: '/donor-dashboard',
-      hospital: '/hospital-dashboard',
-      admin: '/admin-dashboard',
-    }
-
-    navigate(dashboardRoutes[matchedUser.role] || '/login', {
-      replace: true,
-    })
   }
 
   return (
-    <AuthShell title="Welcome back" text="Login to your LifeFlow account.">
+    <AuthShell
+      title="Welcome back"
+      text="Login to your LifeFlow account."
+    >
       <form onSubmit={handleSubmit} className="mt-6 space-y-5">
         <div>
           <label htmlFor="email" className="label">
             Email address
           </label>
+
           <input
             id="email"
             name="email"
@@ -102,6 +127,7 @@ function Login() {
           <label htmlFor="password" className="label">
             Password
           </label>
+
           <input
             id="password"
             name="password"
@@ -117,9 +143,13 @@ function Login() {
 
         <FormError message={error} />
 
-        <button type="submit" className="btn btn-primary w-full">
+        <button
+          type="submit"
+          disabled={loading}
+          className="btn btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60"
+        >
           <LogIn size={18} />
-          Login
+          {loading ? 'Logging in...' : 'Login'}
         </button>
       </form>
 
@@ -134,7 +164,7 @@ function Login() {
       </p>
 
       <p className="hint mt-4 text-center">
-        Demo login: accounts are stored in this browser only.
+        Login securely with your registered LifeFlow account.
       </p>
     </AuthShell>
   )

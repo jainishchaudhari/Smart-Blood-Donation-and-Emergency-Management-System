@@ -1,33 +1,38 @@
-import { useEffect } from "react";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { useEffect } from 'react'
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  useLocation,
+} from 'react-router-dom'
 
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
+import Navbar from './components/Navbar'
+import Footer from './components/Footer'
+import ProtectedRoute from './components/ProtectedRoute'
 
-import Home from "./pages/Home";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
+import Home from './pages/Home'
+import Login from './pages/Login'
+import Register from './pages/Register'
 
-import UserDashboard from "./pages/UserDashboard";
-import DonorDashboard from "./pages/DonorDashboard";
-import AdminDashboard from "./pages/AdminDashboard";
+import UserDashboard from './pages/UserDashboard'
+import DonorDashboard from './pages/DonorDashboard'
+import AdminDashboard from './pages/AdminDashboard'
+import HospitalDashboard from './pages/HospitalDashboard'
 
-import EmergencyRequest from "./pages/EmergencyRequest";
-import ShowRequests from "./pages/ShowRequests";
-import FindBlood from "./pages/FindBlood";
-import DonationHistory from "./pages/DonationHistory";
+import EmergencyRequest from './pages/EmergencyRequest'
+import ShowRequests from './pages/ShowRequests'
+import FindBlood from './pages/FindBlood'
+import DonationHistory from './pages/DonationHistory'
 
-import HospitalDashboard from "./pages/HospitalDashboard";
-
-// Start every page at the top when the route changes
+// Scroll to top whenever the route changes
 function ScrollToTop() {
-  const { pathname } = useLocation();
+  const { pathname } = useLocation()
 
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [pathname]);
+    window.scrollTo(0, 0)
+  }, [pathname])
 
-  return null;
+  return null
 }
 
 function App() {
@@ -43,47 +48,76 @@ function App() {
       </a>
 
       <div className="flex min-h-screen flex-col">
-      <Navbar />
+        <Navbar />
 
-      <main id="main" className="flex-1">
-      <Routes>
-        {/* Home */}
-        <Route path="/" element={<Home />} />
+        <main id="main" className="flex-1">
+          <Routes>
+            {/* Public Pages */}
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
 
-        {/* Authentication */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+            {/* Protected Routes */}
+            <Route element={<ProtectedRoute allowedRoles={['user']} />}>
+              <Route
+                path="/user-dashboard"
+                element={<UserDashboard />}
+              />
+            </Route>
 
-        {/* User Dashboard */}
-        <Route path="/user-dashboard" element={<UserDashboard />} />
+            <Route element={<ProtectedRoute allowedRoles={['donor']} />}>
+              <Route
+                path="/donor-dashboard"
+                element={<DonorDashboard />}
+              />
+              <Route
+                path="/donation-history"
+                element={<DonationHistory />}
+              />
+            </Route>
 
-        {/* Donor Dashboard */}
-        <Route path="/donor-dashboard" element={<DonorDashboard />} />
+            <Route element={<ProtectedRoute allowedRoles={['hospital']} />}>
+              <Route
+                path="/hospital-dashboard"
+                element={<HospitalDashboard />}
+              />
+              <Route
+                path="/emergency-request"
+                element={<EmergencyRequest />}
+              />
+            </Route>
 
-        {/* Admin Dashboard */}
-        <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+              <Route
+                path="/admin-dashboard"
+                element={<AdminDashboard />}
+              />
+            </Route>
 
-        {/* Emergency Request */}
-        <Route path="/emergency-request" element={<EmergencyRequest />} />
+            {/* Pages accessible to any logged-in role */}
+            <Route
+              element={
+                <ProtectedRoute
+                  allowedRoles={['user', 'donor', 'hospital', 'admin']}
+                />
+              }
+            >
+              <Route
+                path="/find-blood"
+                element={<FindBlood />}
+              />
+              <Route
+                path="/show-requests"
+                element={<ShowRequests />}
+              />
+            </Route>
+          </Routes>
+        </main>
 
-        {/* Show Requests */}
-        <Route path="/show-requests" element={<ShowRequests />} />
-
-        {/* Find Blood */}
-        <Route path="/find-blood" element={<FindBlood />} />
-
-        {/* Donation History */}
-        <Route path="/donation-history" element={<DonationHistory />} />
-
-        {/* Hospital Dashboard */}
-        <Route path="/hospital-dashboard" element={<HospitalDashboard />} />
-      </Routes>
-      </main>
-
-      <Footer />
+        <Footer />
       </div>
     </BrowserRouter>
-  );
+  )
 }
 
-export default App;
+export default App

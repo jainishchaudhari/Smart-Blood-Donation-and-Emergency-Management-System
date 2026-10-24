@@ -1,3 +1,4 @@
+
 const express = require('express')
 
 const router = express.Router()
@@ -8,15 +9,40 @@ const {
   getBloodRequestById,
 } = require('../controllers/requestController')
 
-const { protect } = require('../middleware/authMiddleware')
+const {
+  protect,
+  authorizeRoles,
+} = require('../middleware/authMiddleware')
 
-// Create a new blood request - login required
-router.post('/', protect, createBloodRequest)
+const allowedRequestRoles = [
+  'user',
+  'donor',
+  'hospital',
+  'admin',
+]
+
+// Create a new blood request
+router.post(
+  '/',
+  protect,
+  authorizeRoles(...allowedRequestRoles),
+  createBloodRequest
+)
 
 // Get all blood requests
-router.get('/', getAllBloodRequests)
+router.get(
+  '/',
+  protect,
+  authorizeRoles(...allowedRequestRoles),
+  getAllBloodRequests
+)
 
 // Get a single blood request by ID
-router.get('/:id', getBloodRequestById)
+router.get(
+  '/:id',
+  protect,
+  authorizeRoles(...allowedRequestRoles),
+  getBloodRequestById
+)
 
 module.exports = router

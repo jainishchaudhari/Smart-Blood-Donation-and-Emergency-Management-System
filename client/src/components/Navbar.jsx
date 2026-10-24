@@ -1,62 +1,65 @@
-import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { useState } from 'react'
-import { Menu, X, LogOut, Plus } from 'lucide-react'
-import { Logo } from './ui'
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Menu, X, LogOut, Plus } from "lucide-react";
+import { Logo } from "./ui";
 
 function Navbar() {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const navigate = useNavigate()
+  const [menuOpen, setMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
-  let currentUser
+  let currentUser;
 
   try {
-    const savedUser = localStorage.getItem('lifeflowUser')
-    currentUser = savedUser ? JSON.parse(savedUser) : null
+    const savedUser = localStorage.getItem("lifeflowUser");
+    currentUser = savedUser ? JSON.parse(savedUser) : null;
   } catch {
-    currentUser = null
+    currentUser = null;
   }
 
   const dashboardRoutes = {
-    user: '/user-dashboard',
-    donor: '/donor-dashboard',
-    hospital: '/hospital-dashboard',
-    admin: '/admin-dashboard',
-  }
+    user: "/user-dashboard",
+    donor: "/donor-dashboard",
+    hospital: "/hospital-dashboard",
+    admin: "/admin-dashboard",
+  };
 
   const dashboardPath = currentUser
-    ? dashboardRoutes[currentUser.role] || '/login'
-    : '/login'
+    ? dashboardRoutes[currentUser.role] || "/login"
+    : "/login";
 
   const navLinks = [
-    { name: 'Home', path: '/' },
+    { name: "Home", path: "/" },
     ...(currentUser
       ? [
-          { name: 'Find blood', path: '/find-blood' },
-          { name: 'Requests', path: '/show-requests' },
-          { name: 'Dashboard', path: dashboardPath },
+          { name: "Find blood", path: "/find-blood" },
+          { name: "Requests", path: "/show-requests" },
+          { name: "Dashboard", path: dashboardPath },
         ]
       : []),
-  ]
+  ];
 
   const handleLogout = () => {
-    localStorage.removeItem('lifeflowUser')
-    setMenuOpen(false)
-    navigate('/login', { replace: true })
-  }
+    localStorage.removeItem("lifeflowToken");
+    localStorage.removeItem("lifeflowUser");
 
-  const closeMenu = () => setMenuOpen(false)
+    setMenuOpen(false);
+
+    navigate("/login", { replace: true });
+  };
+
+  const closeMenu = () => setMenuOpen(false);
 
   const desktopLink = ({ isActive }) =>
     `border-b-2 py-1 text-sm font-medium transition-colors ${
       isActive
-        ? 'border-blood text-ink'
-        : 'border-transparent text-muted hover:text-ink'
-    }`
+        ? "border-blood text-ink"
+        : "border-transparent text-muted hover:text-ink"
+    }`;
 
   const mobileLink = ({ isActive }) =>
     `rounded-lg px-3 py-3 font-medium transition-colors ${
-      isActive ? 'bg-plasma text-blood' : 'text-ink hover:bg-paper'
-    }`
+      isActive ? "bg-plasma text-blood" : "text-ink hover:bg-paper"
+    }`;
 
   return (
     <nav className="sticky top-0 z-50 border-b border-line bg-white/95 backdrop-blur">
@@ -71,7 +74,7 @@ function Navbar() {
             <NavLink
               key={link.name}
               to={link.path}
-              end={link.path === '/'}
+              end={link.path === "/"}
               className={desktopLink}
             >
               {link.name}
@@ -112,7 +115,7 @@ function Navbar() {
           type="button"
           onClick={() => setMenuOpen(!menuOpen)}
           className="-mr-2 rounded-lg p-2 text-ink md:hidden"
-          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
           aria-expanded={menuOpen}
         >
           {menuOpen ? <X size={26} /> : <Menu size={26} />}
@@ -126,7 +129,7 @@ function Navbar() {
             <NavLink
               key={link.name}
               to={link.path}
-              end={link.path === '/'}
+              end={link.path === "/"}
               onClick={closeMenu}
               className={mobileLink}
             >
@@ -172,7 +175,7 @@ function Navbar() {
         </div>
       )}
     </nav>
-  )
+  );
 }
 
-export default Navbar
+export default Navbar;
