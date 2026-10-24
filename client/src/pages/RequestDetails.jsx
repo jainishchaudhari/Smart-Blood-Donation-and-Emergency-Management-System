@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -12,6 +12,8 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { PageContainer } from '../components/ui'
+import NearbyDonors from '../components/NearbyDonors'
+import RequestProgress from '../components/RequestProgress'
 
 const API_URL = 'http://localhost:5000/api/requests'
 
@@ -71,8 +73,9 @@ function RequestDetails() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    const load = async () => {
+  // Load the request; silent reloads keep the page fresh without flicker
+  const load = useCallback(
+    async (silent = false) => {
       try {
         const response = await fetch(`${API_URL}/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -86,14 +89,21 @@ function RequestDetails() {
 
         setRequest(data.request)
       } catch (err) {
-        setError(err.message || 'Could not load this request.')
+        if (!silent) setError(err.message || 'Could not load this request.')
       } finally {
-        setLoading(false)
+        if (!silent) setLoading(false)
       }
-    }
+    },
+    [id, token]
+  )
 
-    load()
-  }, [id, token])
+  useEffect(() => {
+    load(false)
+    const timer = setInterval(() => load(true), 15000)
+    return () => clearInterval(timer)
+  }, [load])
+
+  const refreshRequest = useCallback(() => load(true), [load])
 
   if (loading) {
     return (
@@ -117,6 +127,18 @@ function RequestDetails() {
   }
 
   const urgency = (request.urgency || 'medium').toLowerCase()
+  // Only the requester, hospitals and admins may search for donors
+  let currentUser = null
+  try {
+    currentUser = JSON.parse(localStorage.getItem('lifeflowUser') || 'null')
+  } catch {
+    currentUser = null
+  }
+
+  const requesterId = request.requestedBy?._id || request.requestedBy
+  const canFindDonors =
+    currentUser?.id === requesterId || currentUser?.role === 'admin'
+
   const hasLocation =
     typeof request.latitude === 'number' &&
     typeof request.longitude === 'number'
@@ -153,10 +175,12 @@ function RequestDetails() {
               {urgency}
             </span>
             <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold capitalize text-gray-700">
-              {request.status}
+              {request.status.replace('_', ' ')}
             </span>
           </div>
         </div>
+
+        <RequestProgress status={request.status} />
 
         <div className="flex flex-wrap gap-3">
           <div className="rounded-xl bg-red-50 px-4 py-3">
@@ -198,6 +222,7 @@ function RequestDetails() {
             {[request.area, request.city].filter(Boolean).join(', ')}
           </Row>
 
+          {request.contactNumber && (
           <Row icon={Phone} label="Contact">
             <p>
               {request.attendantName ? `${request.attendantName}: ` : ''}
@@ -220,6 +245,15 @@ function RequestDetails() {
               </p>
             )}
           </Row>
+          )}
+
+          {!request.contactNumber && (
+            <Row icon={Phone} label="Contact">
+              <span className="text-sm font-normal text-gray-600">
+                Shared with the donor who accepts this request.
+              </span>
+            </Row>
+          )}
         </div>
 
         {request.notes && (
@@ -282,6 +316,10 @@ function RequestDetails() {
           )}
         </div>
       </div>
+
+      {canFindDonors && hasLocation && (
+        <NearbyDonors request={request} onChanged={refreshRequest} />
+      )}
     </PageContainer>
   )
 }

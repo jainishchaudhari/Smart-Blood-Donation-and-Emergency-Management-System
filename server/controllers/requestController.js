@@ -1,5 +1,10 @@
 const mongoose = require("mongoose");
 const BloodRequest = require("../models/BloodRequest");
+const User = require("../models/User");
+const { sanitizeRequestForUser } = require("../utils/requestPrivacy");
+const {
+  getCompatibleDonorGroups,
+} = require("../utils/bloodCompatibility");
 
 // Create a new blood request
 const createBloodRequest = async (req, res) => {
@@ -190,7 +195,9 @@ const getAllBloodRequests = async (req, res) => {
     return res.status(200).json({
       success: true,
       count: requests.length,
-      requests,
+      requests: requests.map((item) =>
+        sanitizeRequestForUser(item, req.user)
+      ),
     });
   } catch (error) {
     console.error("Get blood requests error:", error.message);
@@ -227,7 +234,7 @@ const getBloodRequestById = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      request: bloodRequest,
+      request: sanitizeRequestForUser(bloodRequest, req.user),
     });
   } catch (error) {
     console.error("Get blood request error:", error.message);
@@ -308,7 +315,137 @@ const acceptBloodRequest = async (req, res) => {
   }
 };
 
+const ALLOWED_RADII_KM = [5, 10, 25, 50];
+
+// Find available, compatible donors near a blood request (nearest first)
+const getNearbyDonors = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid blood request ID",
+      });
+    }
+
+    const bloodRequest = await BloodRequest.findById(id);
+
+    if (!bloodRequest) {
+      return res.status(404).json({
+        success: false,
+        message: "Blood request not found",
+      });
+    }
+
+    // Only the requester, hospitals and admins may search for donors
+    const isOwner =
+      String(bloodRequest.requestedBy) === String(req.user._id);
+
+    if (!isOwner && req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "You can only search donors for your own requests",
+      });
+    }
+
+    if (!["pending", "accepted"].includes(bloodRequest.status)) {
+      return res.status(400).json({
+        success: false,
+        message: "This request is no longer active",
+      });
+    }
+
+    if (
+      typeof bloodRequest.latitude !== "number" ||
+      typeof bloodRequest.longitude !== "number"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "This request has no map location",
+      });
+    }
+
+    const radiusKm = Number(req.query.radius || 10);
+
+    if (!ALLOWED_RADII_KM.includes(radiusKm)) {
+      return res.status(400).json({
+        success: false,
+        message: `Radius must be one of: ${ALLOWED_RADII_KM.join(", ")} km`,
+      });
+    }
+
+    const compatibleGroups = getCompatibleDonorGroups(
+      bloodRequest.bloodGroup
+    );
+
+    const donors = await User.aggregate([
+      {
+        $geoNear: {
+          near: {
+            type: "Point",
+            coordinates: [bloodRequest.longitude, bloodRequest.latitude],
+          },
+          key: "location",
+          distanceField: "distanceMeters",
+          maxDistance: radiusKm * 1000,
+          spherical: true,
+          query: {
+            role: "donor",
+            isAvailable: true,
+            profileCompleted: true,
+            bloodGroup: { $in: compatibleGroups },
+            _id: { $ne: req.user._id },
+          },
+        },
+      },
+      { $limit: 50 },
+      {
+        // Never send phone, email, address or exact location here
+        $project: {
+          name: 1,
+          bloodGroup: 1,
+          city: 1,
+          area: 1,
+          isAvailable: 1,
+          distanceMeters: 1,
+          "location.coordinates": 1,
+        },
+      },
+    ]);
+
+    const result = donors.map((donor) => ({
+      _id: donor._id,
+      name: donor.name,
+      bloodGroup: donor.bloodGroup,
+      city: donor.city,
+      area: donor.area,
+      isAvailable: donor.isAvailable,
+      distanceKm: Math.round((donor.distanceMeters / 1000) * 10) / 10,
+      // Rounded to 2 decimals (about 1 km) so exact home location stays private
+      approxLatitude: Math.round(donor.location.coordinates[1] * 100) / 100,
+      approxLongitude: Math.round(donor.location.coordinates[0] * 100) / 100,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      radiusKm,
+      compatibleGroups,
+      count: result.length,
+      donors: result,
+    });
+  } catch (error) {
+    console.error("Nearby donors error:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while searching nearby donors",
+    });
+  }
+};
+
 module.exports = {
+  getNearbyDonors,
   createBloodRequest,
   getAllBloodRequests,
   getBloodRequestById,

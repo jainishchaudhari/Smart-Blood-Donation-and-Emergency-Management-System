@@ -20,6 +20,7 @@ import FindBlood from "./pages/FindBlood";
 import DonationHistory from "./pages/DonationHistory";
 import DonorProfile from "./pages/DonorProfile";
 import RequestDetails from "./pages/RequestDetails";
+import DonorInvitations from "./pages/DonorInvitations";
 
 // Scroll to top whenever the route changes
 function ScrollToTop() {
@@ -63,6 +64,7 @@ function App() {
               <Route path="/donor-dashboard" element={<DonorDashboard />} />
               <Route path="/donation-history" element={<DonationHistory />} />
               <Route path="/donor-profile" element={<DonorProfile />} />
+              <Route path="/donor-invitations" element={<DonorInvitations />} />
             </Route>
 
             <Route element={<ProtectedRoute allowedRoles={["hospital"]} />}>

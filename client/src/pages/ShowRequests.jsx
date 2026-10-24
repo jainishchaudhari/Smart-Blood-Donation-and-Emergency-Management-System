@@ -26,6 +26,7 @@ const getSavedUser = () => {
 const getStatusStyle = (status) => {
   switch ((status || "pending").toLowerCase()) {
     case "accepted":
+    case "in_progress":
       return "bg-blue-100 text-blue-700";
     case "completed":
       return "bg-green-100 text-green-700";
@@ -429,7 +430,7 @@ export default function ShowRequests() {
                           request.status
                         )}`}
                       >
-                        {request.status || "pending"}
+                        {(request.status || "pending").replace("_", " ")}
                       </span>
                     </div>
 
@@ -493,7 +494,7 @@ export default function ShowRequests() {
                           Contact Number
                         </p>
                         <p className="font-medium text-gray-800">
-                          {request.contactNumber || "Not provided"}
+                          {request.contactNumber || "Shared after you accept"}
                         </p>
                       </div>
                     </div>

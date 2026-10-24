@@ -1,4 +1,3 @@
-
 const express = require('express')
 
 const router = express.Router()
@@ -8,7 +7,14 @@ const {
   getAllBloodRequests,
   getBloodRequestById,
   acceptBloodRequest,
+  getNearbyDonors,
 } = require('../controllers/requestController')
+
+const {
+  sendInvitations,
+  getRequestInvitations,
+  updateRequestStatus,
+} = require('../controllers/invitationController')
 
 const {
   protect,
@@ -44,6 +50,37 @@ router.patch(
   protect,
   authorizeRoles('donor'),
   acceptBloodRequest
+)
+
+// Find nearby compatible donors for a request
+router.get(
+  '/:id/nearby-donors',
+  protect,
+  authorizeRoles(...allowedRequestRoles),
+  getNearbyDonors
+)
+
+// Send the request to the nearest eligible donors / see who was contacted
+router.post(
+  '/:id/invitations',
+  protect,
+  authorizeRoles(...allowedRequestRoles),
+  sendInvitations
+)
+
+router.get(
+  '/:id/invitations',
+  protect,
+  authorizeRoles(...allowedRequestRoles),
+  getRequestInvitations
+)
+
+// Change request progress: in_progress / completed / cancelled
+router.patch(
+  '/:id/status',
+  protect,
+  authorizeRoles(...allowedRequestRoles),
+  updateRequestStatus
 )
 
 // Get a single blood request by ID
