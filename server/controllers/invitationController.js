@@ -73,8 +73,10 @@ const sendInvitations = async (req, res) => {
       })
     }
 
-    const count = Number(req.body.count ?? 1)
-    const radiusKm = Number(req.body.radius ?? 10)
+    // Express 5: req.body is undefined when the request has no body
+    const body = req.body || {}
+    const count = Number(body.count ?? 1)
+    const radiusKm = Number(body.radius ?? 10)
 
     if (!Number.isInteger(count) || count < 1 || count > MAX_PER_SEND) {
       return res.status(400).json({
@@ -468,7 +470,7 @@ const TRANSITIONS = {
 const updateRequestStatus = async (req, res) => {
   try {
     const { id } = req.params
-    const { status } = req.body
+    const { status } = req.body || {}
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ success: false, message: 'Invalid blood request ID' })

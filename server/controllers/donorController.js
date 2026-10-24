@@ -243,7 +243,7 @@ const updateDonorProfile = async (req, res) => {
       isAvailable,
       latitude,
       longitude,
-    } = req.body
+    } = req.body || {}
 
     const fail = (message) =>
       res.status(400).json({ success: false, message })
