@@ -7,6 +7,7 @@ const {
   createBloodRequest,
   getAllBloodRequests,
   getBloodRequestById,
+  acceptBloodRequest,
 } = require('../controllers/requestController')
 
 const {
@@ -35,6 +36,14 @@ router.get(
   protect,
   authorizeRoles(...allowedRequestRoles),
   getAllBloodRequests
+)
+
+// Donor accepts a blood request
+router.patch(
+  '/:id/accept',
+  protect,
+  authorizeRoles('donor'),
+  acceptBloodRequest
 )
 
 // Get a single blood request by ID

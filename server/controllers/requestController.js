@@ -136,6 +136,7 @@ const getAllBloodRequests = async (req, res) => {
     });
   }
 };
+
 // Get a single blood request by ID
 const getBloodRequestById = async (req, res) => {
   try {
@@ -176,8 +177,77 @@ const getBloodRequestById = async (req, res) => {
   }
 };
 
+// Donor accepts a pending blood request
+const acceptBloodRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid blood request ID",
+      });
+    }
+
+    const bloodRequest = await BloodRequest.findById(id);
+
+    if (!bloodRequest) {
+      return res.status(404).json({
+        success: false,
+        message: "Blood request not found",
+      });
+    }
+
+    // Only pending requests can be accepted
+    if (bloodRequest.status !== "pending") {
+      return res.status(400).json({
+        success: false,
+        message: "Only pending requests can be accepted",
+      });
+    }
+
+    // Atomically accept the request so two donors cannot
+    // accept the same pending request simultaneously.
+    const acceptedRequest = await BloodRequest.findOneAndUpdate(
+      {
+        _id: id,
+        status: "pending",
+      },
+      {
+        $set: { status: "accepted" },
+      },
+      {
+        new: true,
+        runValidators: true,
+      },
+    ).populate("requestedBy", "name email role");
+
+    if (!acceptedRequest) {
+      return res.status(409).json({
+        success: false,
+        message: "This request has already been accepted or updated",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Blood request accepted successfully",
+      request: acceptedRequest,
+    });
+  } catch (error) {
+    console.error("Accept blood request error:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while accepting blood request",
+    });
+  }
+};
+
 module.exports = {
   createBloodRequest,
   getAllBloodRequests,
   getBloodRequestById,
+  acceptBloodRequest,
 };
