@@ -6,10 +6,14 @@ const router = express.Router()
 const {
   getDonorDashboard,
   getDonationHistory,
+  createDonation,
   getAllDonors,
 } = require('../controllers/donorController')
 
-const { protect, authorizeRoles } = require('../middleware/authMiddleware')
+const {
+  protect,
+  authorizeRoles,
+} = require('../middleware/authMiddleware')
 
 // Find registered donors
 router.get(
@@ -33,6 +37,14 @@ router.get(
   protect,
   authorizeRoles('donor'),
   getDonationHistory
+)
+
+// Create a new donation
+router.post(
+  '/',
+  protect,
+  authorizeRoles('donor'),
+  createDonation
 )
 
 module.exports = router

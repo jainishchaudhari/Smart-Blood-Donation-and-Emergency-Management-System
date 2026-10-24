@@ -5,7 +5,6 @@ const Donation = require('../models/Donation')
 // Get donor dashboard information
 const getDonorDashboard = async (req, res) => {
   try {
-    // Verify that the logged-in user is a donor
     if (req.user.role !== 'donor') {
       return res.status(403).json({
         success: false,
@@ -13,17 +12,14 @@ const getDonorDashboard = async (req, res) => {
       })
     }
 
-    // Get donor's donation history
     const donations = await Donation.find({
       donor: req.user._id,
     }).sort({ donationDate: -1 })
 
-    // Count completed donations
     const completedDonations = donations.filter(
       (donation) => donation.status === 'completed'
     )
 
-    // Get donor information
     const donor = await User.findById(req.user._id).select(
       '-password'
     )
@@ -81,6 +77,73 @@ const getDonationHistory = async (req, res) => {
   }
 }
 
+// Create a new donation
+const createDonation = async (req, res) => {
+  try {
+    if (req.user.role !== 'donor') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only donors can create donations',
+      })
+    }
+
+    const {
+      bloodGroup,
+      units,
+      donationDate,
+      hospitalName,
+      city,
+      notes,
+    } = req.body
+
+    if (
+      !bloodGroup ||
+      !hospitalName?.trim() ||
+      !city?.trim()
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          'Blood group, hospital name and city are required',
+      })
+    }
+
+    const donation = await Donation.create({
+      donor: req.user._id,
+      bloodGroup,
+      units: units === undefined || units === '' ? 1 : Number(units),
+      donationDate: donationDate || new Date(),
+      hospitalName: hospitalName.trim(),
+      city: city.trim(),
+      notes: notes || '',
+      status: 'scheduled',
+    })
+
+    return res.status(201).json({
+      success: true,
+      message: 'Donation created successfully',
+      donation,
+    })
+  } catch (error) {
+    console.error('Create donation error:', error.message)
+
+    if (
+      error.name === 'ValidationError' ||
+      error.name === 'CastError'
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      })
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while creating donation',
+    })
+  }
+}
+
 // Get all registered donors with optional filters
 const getAllDonors = async (req, res) => {
   try {
@@ -131,5 +194,6 @@ const getAllDonors = async (req, res) => {
 module.exports = {
   getDonorDashboard,
   getDonationHistory,
+  createDonation,
   getAllDonors,
 }
