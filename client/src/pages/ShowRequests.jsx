@@ -10,6 +10,7 @@ import {
   ClipboardList,
   MapPin,
   ExternalLink,
+  CheckCircle,
 } from 'lucide-react'
 
 import {
@@ -19,6 +20,8 @@ import {
   PageHeader,
   Pill,
 } from '../components/ui'
+
+const API_URL = 'http://localhost:5000/api/requests'
 
 const urgencyFilters = ['All', 'Critical', 'High', 'Normal']
 
@@ -49,6 +52,20 @@ function ShowRequests() {
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [acceptingId, setAcceptingId] = useState(null)
+  const [message, setMessage] = useState('')
+
+  const savedUser = localStorage.getItem('lifeflowUser')
+
+  let currentUser = null
+
+  try {
+    currentUser = savedUser ? JSON.parse(savedUser) : null
+  } catch {
+    currentUser = null
+  }
+
+  const isDonor = currentUser?.role === 'donor'
 
   const fetchRequests = useCallback(async () => {
     setLoading(true)
@@ -63,18 +80,15 @@ function ShowRequests() {
         return
       }
 
-      const response = await fetch(
-        'http://localhost:5000/api/requests?status=pending',
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      )
+      const response = await fetch(`${API_URL}?status=pending`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
 
       const data = await response.json()
 
-      if (!response.ok) {
+      if (!response.ok || data.success === false) {
         throw new Error(data.message || 'Could not load blood requests.')
       }
 
@@ -93,6 +107,54 @@ function ShowRequests() {
     fetchRequests()
   }, [fetchRequests])
 
+  const handleAcceptRequest = async (requestId) => {
+    const token = localStorage.getItem('lifeflowToken')
+
+    if (!token) {
+      setError('Your session has expired. Please log in again.')
+      return
+    }
+
+    const confirmed = window.confirm(
+      'Do you want to accept this blood request?'
+    )
+
+    if (!confirmed) return
+
+    setAcceptingId(requestId)
+    setError('')
+    setMessage('')
+
+    try {
+      const response = await fetch(`${API_URL}/${requestId}/accept`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || data.success === false) {
+        throw new Error(data.message || 'Could not accept this request.')
+      }
+
+      setMessage('Request accepted successfully!')
+
+      // Remove it from the pending requests list
+      setRequests((previous) =>
+        previous.filter((request) => request._id !== requestId)
+      )
+
+      // Refresh pending requests from the backend
+      await fetchRequests()
+    } catch (err) {
+      setError(err.message || 'Unable to accept this request.')
+    } finally {
+      setAcceptingId(null)
+    }
+  }
+
   const visibleRequests = requests
     .filter((request) => {
       if (urgency === 'All') return true
@@ -106,7 +168,13 @@ function ShowRequests() {
       return level === urgency.toLowerCase()
     })
     .sort((a, b) => {
-      const order = { critical: 0, high: 1, medium: 2, normal: 2, low: 3 }
+      const order = {
+        critical: 0,
+        high: 1,
+        medium: 2,
+        normal: 2,
+        low: 3,
+      }
 
       const urgencyDifference =
         (order[String(a.urgency || '').toLowerCase()] ?? 4) -
@@ -159,6 +227,12 @@ function ShowRequests() {
         ))}
       </div>
 
+      {message && (
+        <p className="mt-5 text-sm text-ok" role="status">
+          {message}
+        </p>
+      )}
+
       {loading && (
         <p className="mt-8 text-muted" role="status">
           Loading blood requests...
@@ -185,10 +259,10 @@ function ShowRequests() {
             const style = urgencyStyle[level] || urgencyStyle.medium
 
             const mapUrl =
+              request.latitude != null &&
+              request.longitude != null &&
               Number.isFinite(Number(request.latitude)) &&
-              Number.isFinite(Number(request.longitude)) &&
-              request.latitude !== null &&
-              request.longitude !== null
+              Number.isFinite(Number(request.longitude))
                 ? `https://www.google.com/maps?q=${request.latitude},${request.longitude}`
                 : null
 
@@ -204,9 +278,11 @@ function ShowRequests() {
                     <h2 className="text-lg font-semibold">
                       {request.patientName}
                     </h2>
+
                     <p className="mt-0.5 break-all text-sm text-muted">
                       Request #{request._id}
                     </p>
+
                     <div className="mt-2">
                       <Pill tone={style.tone}>{style.label}</Pill>
                     </div>
@@ -225,7 +301,9 @@ function ShowRequests() {
                   <li className="flex items-start gap-2.5">
                     <Hospital size={17} className="mt-0.5 shrink-0 text-blood" />
                     <span>
-                      {request.hospitalName}, {request.area}, {request.city}
+                      {request.hospitalName}
+                      {request.area ? `, ${request.area}` : ''}
+                      {request.city ? `, ${request.city}` : ''}
                     </span>
                   </li>
 
@@ -234,21 +312,20 @@ function ShowRequests() {
                     {formatDate(request.createdAt)}
                   </li>
 
-                  {request.latitude != null &&
-                    request.longitude != null && (
-                      <li>
-                        <a
-                          href={mapUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-2 text-blood underline"
-                        >
-                          <MapPin size={17} />
-                          View selected location
-                          <ExternalLink size={14} />
-                        </a>
-                      </li>
-                    )}
+                  {mapUrl && (
+                    <li>
+                      <a
+                        href={mapUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 text-blood underline"
+                      >
+                        <MapPin size={17} />
+                        View selected location
+                        <ExternalLink size={14} />
+                      </a>
+                    </li>
+                  )}
 
                   {request.notes && (
                     <li className="rounded-lg bg-paper p-3 text-muted">
@@ -267,6 +344,20 @@ function ShowRequests() {
                     Call {request.contactNumber}
                   </a>
                 )}
+
+                {isDonor && (
+                  <button
+                    type="button"
+                    onClick={() => handleAcceptRequest(request._id)}
+                    disabled={acceptingId === request._id}
+                    className="btn btn-primary mt-3 w-full disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <CheckCircle size={18} />
+                    {acceptingId === request._id
+                      ? 'Accepting...'
+                      : 'Accept Request'}
+                  </button>
+                )}
               </li>
             )
           })}
@@ -284,7 +375,7 @@ function ShowRequests() {
             }
             text={
               requests.length === 0
-                ? 'Create an emergency request to see it listed here.'
+                ? 'There are currently no pending requests to display.'
                 : 'Choose another urgency level to see more requests.'
             }
           />
