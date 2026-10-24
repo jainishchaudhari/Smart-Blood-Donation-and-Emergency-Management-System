@@ -1,5 +1,5 @@
-const mongoose = require('mongoose')
-const BloodRequest = require('../models/BloodRequest')
+const mongoose = require("mongoose");
+const BloodRequest = require("../models/BloodRequest");
 
 // Create a new blood request
 const createBloodRequest = async (req, res) => {
@@ -10,10 +10,13 @@ const createBloodRequest = async (req, res) => {
       units,
       hospitalName,
       city,
+      area,
+      latitude,
+      longitude,
       contactNumber,
       urgency,
       notes,
-    } = req.body
+    } = req.body;
 
     // Validate required fields
     if (
@@ -21,25 +24,26 @@ const createBloodRequest = async (req, res) => {
       !bloodGroup ||
       units === undefined ||
       units === null ||
-      units === '' ||
+      units === "" ||
       !hospitalName ||
       !city ||
+      !area ||
       !contactNumber
     ) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide all required blood request details',
-      })
+        message: "Please provide all required blood request details",
+      });
     }
 
     // Validate units
-    const parsedUnits = Number(units)
+    const parsedUnits = Number(units);
 
     if (!Number.isInteger(parsedUnits) || parsedUnits < 1) {
       return res.status(400).json({
         success: false,
-        message: 'Units must be a positive whole number',
-      })
+        message: "Units must be a positive whole number",
+      });
     }
 
     // Create blood request
@@ -49,96 +53,131 @@ const createBloodRequest = async (req, res) => {
       units: parsedUnits,
       hospitalName,
       city,
+      area,
+      latitude,
+      longitude,
       contactNumber,
       urgency,
       notes,
       requestedBy: req.user._id,
-    })
+    });
 
     return res.status(201).json({
       success: true,
-      message: 'Blood request created successfully',
+      message: "Blood request created successfully",
       request: bloodRequest,
-    })
+    });
   } catch (error) {
-    console.error('Create blood request error:', error.message)
+    console.error("Create blood request error:", error.message);
 
-    if (error.name === 'ValidationError') {
+    if (error.name === "ValidationError") {
       return res.status(400).json({
         success: false,
         message: error.message,
-      })
+      });
     }
 
     return res.status(500).json({
       success: false,
-      message: 'Server error while creating blood request',
-    })
+      message: "Server error while creating blood request",
+    });
   }
-}
+};
 
 // Get all blood requests
 const getAllBloodRequests = async (req, res) => {
   try {
-    const requests = await BloodRequest.find()
-      .populate('requestedBy', 'name email role')
-      .sort({ createdAt: -1 })
+    const { city, area, bloodGroup, urgency, status } = req.query;
+
+    // Build search filters dynamically
+    const filter = {};
+
+    if (city && city.trim()) {
+      filter.city = {
+        $regex: city.trim(),
+        $options: "i",
+      };
+    }
+
+    if (area && area.trim()) {
+      filter.area = {
+        $regex: area.trim(),
+        $options: "i",
+      };
+    }
+
+    if (bloodGroup) {
+      filter.bloodGroup = bloodGroup;
+    }
+
+    if (urgency) {
+      filter.urgency = urgency;
+    }
+
+    if (status) {
+      filter.status = status;
+    }
+
+    const requests = await BloodRequest.find(filter)
+      .populate("requestedBy", "name email role")
+      .sort({ createdAt: -1 });
 
     return res.status(200).json({
       success: true,
       count: requests.length,
       requests,
-    })
+    });
   } catch (error) {
-    console.error('Get blood requests error:', error.message)
+    console.error("Get blood requests error:", error.message);
 
     return res.status(500).json({
       success: false,
-      message: 'Server error while fetching blood requests',
-    })
+      message: "Server error while fetching blood requests",
+    });
   }
-}
-
+};
 // Get a single blood request by ID
 const getBloodRequestById = async (req, res) => {
   try {
-    const { id } = req.params
+    const { id } = req.params;
 
     // Validate MongoDB ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid blood request ID',
-      })
+        message: "Invalid blood request ID",
+      });
     }
 
-    const bloodRequest = await BloodRequest.findById(id)
-      .populate('requestedBy', 'name email role')
+    const bloodRequest = await BloodRequest.findById(id).populate(
+      "requestedBy",
+      "name email role",
+    );
 
     // Check whether request exists
     if (!bloodRequest) {
       return res.status(404).json({
         success: false,
-        message: 'Blood request not found',
-      })
+        message: "Blood request not found",
+      });
     }
 
     return res.status(200).json({
       success: true,
       request: bloodRequest,
-    })
+    });
   } catch (error) {
-    console.error('Get blood request error:', error.message)
+    console.error("Get blood request error:", error.message);
 
     return res.status(500).json({
       success: false,
-      message: 'Server error while fetching blood request',
-    })
+      message: "Server error while fetching blood request",
+    });
   }
-}
+};
 
 module.exports = {
   createBloodRequest,
   getAllBloodRequests,
   getBloodRequestById,
-}
+};

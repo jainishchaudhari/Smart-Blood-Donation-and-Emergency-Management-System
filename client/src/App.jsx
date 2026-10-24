@@ -1,38 +1,33 @@
-import { useEffect } from 'react'
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  useLocation,
-} from 'react-router-dom'
+import { useEffect } from "react";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 
-import Navbar from './components/Navbar'
-import Footer from './components/Footer'
-import ProtectedRoute from './components/ProtectedRoute'
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
+import ProtectedRoute from "./components/ProtectedRoute";
 
-import Home from './pages/Home'
-import Login from './pages/Login'
-import Register from './pages/Register'
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 
-import UserDashboard from './pages/UserDashboard'
-import DonorDashboard from './pages/DonorDashboard'
-import AdminDashboard from './pages/AdminDashboard'
-import HospitalDashboard from './pages/HospitalDashboard'
+import UserDashboard from "./pages/UserDashboard";
+import DonorDashboard from "./pages/DonorDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
+import HospitalDashboard from "./pages/HospitalDashboard";
 
-import EmergencyRequest from './pages/EmergencyRequest'
-import ShowRequests from './pages/ShowRequests'
-import FindBlood from './pages/FindBlood'
-import DonationHistory from './pages/DonationHistory'
+import EmergencyRequest from "./pages/EmergencyRequest";
+import ShowRequests from "./pages/ShowRequests";
+import FindBlood from "./pages/FindBlood";
+import DonationHistory from "./pages/DonationHistory";
 
 // Scroll to top whenever the route changes
 function ScrollToTop() {
-  const { pathname } = useLocation()
+  const { pathname } = useLocation();
 
   useEffect(() => {
-    window.scrollTo(0, 0)
-  }, [pathname])
+    window.scrollTo(0, 0);
+  }, [pathname]);
 
-  return null
+  return null;
 }
 
 function App() {
@@ -58,58 +53,40 @@ function App() {
             <Route path="/register" element={<Register />} />
 
             {/* Protected Routes */}
-            <Route element={<ProtectedRoute allowedRoles={['user']} />}>
-              <Route
-                path="/user-dashboard"
-                element={<UserDashboard />}
-              />
+            <Route element={<ProtectedRoute allowedRoles={["user"]} />}>
+              <Route path="/user-dashboard" element={<UserDashboard />} />
             </Route>
 
-            <Route element={<ProtectedRoute allowedRoles={['donor']} />}>
-              <Route
-                path="/donor-dashboard"
-                element={<DonorDashboard />}
-              />
-              <Route
-                path="/donation-history"
-                element={<DonationHistory />}
-              />
+            <Route element={<ProtectedRoute allowedRoles={["donor"]} />}>
+              <Route path="/donor-dashboard" element={<DonorDashboard />} />
+              <Route path="/donation-history" element={<DonationHistory />} />
             </Route>
 
-            <Route element={<ProtectedRoute allowedRoles={['hospital']} />}>
+            <Route element={<ProtectedRoute allowedRoles={["hospital"]} />}>
               <Route
                 path="/hospital-dashboard"
                 element={<HospitalDashboard />}
               />
-              <Route
-                path="/emergency-request"
-                element={<EmergencyRequest />}
-              />
             </Route>
 
-            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-              <Route
-                path="/admin-dashboard"
-                element={<AdminDashboard />}
-              />
+            <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+              <Route path="/admin-dashboard" element={<AdminDashboard />} />
             </Route>
+
 
             {/* Pages accessible to any logged-in role */}
             <Route
               element={
                 <ProtectedRoute
-                  allowedRoles={['user', 'donor', 'hospital', 'admin']}
+                  allowedRoles={["user", "donor", "hospital", "admin"]}
                 />
               }
             >
-              <Route
-                path="/find-blood"
-                element={<FindBlood />}
-              />
-              <Route
-                path="/show-requests"
-                element={<ShowRequests />}
-              />
+              <Route path="/emergency-request" element={<EmergencyRequest />} />
+
+              <Route path="/find-blood" element={<FindBlood />} />
+
+              <Route path="/show-requests" element={<ShowRequests />} />
             </Route>
           </Routes>
         </main>
@@ -117,7 +94,7 @@ function App() {
         <Footer />
       </div>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;

@@ -1,58 +1,24 @@
-import { useState } from 'react'
+
+import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Search, MapPin, Phone, X } from 'lucide-react'
 import {
-  BloodTag,
-  DemoNote,
+  Search,
+  MapPin,
+  Phone,
+  X,
+  RefreshCw,
+  Droplet,
+} from 'lucide-react'
+
+import {
   EmptyState,
   PageContainer,
   PageHeader,
-  Pill,
 } from '../components/ui'
-import { BLOOD_GROUPS, CAN_RECEIVE_FROM, formatGroup } from '../lib/blood'
 
-const sampleDonors = [
-  {
-    id: 1,
-    name: 'Karan Patel',
-    bloodGroup: 'O+',
-    city: 'Ahmedabad',
-    phone: '9876543210',
-    available: true,
-  },
-  {
-    id: 2,
-    name: 'Neha Shah',
-    bloodGroup: 'B+',
-    city: 'Gandhinagar',
-    phone: '9876501234',
-    available: true,
-  },
-  {
-    id: 3,
-    name: 'Aarav Desai',
-    bloodGroup: 'A-',
-    city: 'Ahmedabad',
-    phone: '9898012345',
-    available: false,
-  },
-  {
-    id: 4,
-    name: 'Diya Mehta',
-    bloodGroup: 'AB+',
-    city: 'Surat',
-    phone: '9876123450',
-    available: true,
-  },
-  {
-    id: 5,
-    name: 'Rohan Joshi',
-    bloodGroup: 'O-',
-    city: 'Vadodara',
-    phone: '9898123456',
-    available: true,
-  },
-]
+import { BLOOD_GROUPS, formatGroup } from '../lib/blood'
+
+const API_URL = 'http://localhost:5000/api/donors'
 
 function FindBlood() {
   const [params] = useSearchParams()
@@ -62,61 +28,126 @@ function FindBlood() {
     : ''
 
   const [bloodGroup, setBloodGroup] = useState(initialGroup)
-  const [includeCompatible, setIncludeCompatible] = useState(
-    params.get('compatible') === '1'
-  )
   const [city, setCity] = useState('')
+  const [area, setArea] = useState('')
 
-  const filteredDonors = sampleDonors
-    .filter((donor) => {
-      const matchesBlood =
-        bloodGroup === '' ||
-        (includeCompatible
-          ? CAN_RECEIVE_FROM[bloodGroup].includes(donor.bloodGroup)
-          : donor.bloodGroup === bloodGroup)
+  const [donors, setDonors] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-      const matchesCity =
-        city.trim() === '' ||
-        donor.city.toLowerCase().includes(city.trim().toLowerCase())
+  // Fetch registered donors from backend
+  const fetchDonors = useCallback(async (filters = {}) => {
+    setLoading(true)
+    setError('')
 
-      return matchesBlood && matchesCity
+    try {
+      const token = localStorage.getItem('lifeflowToken')
+
+      if (!token) {
+        setDonors([])
+        setError('Please login to search registered donors.')
+        return
+      }
+
+      const queryParams = new URLSearchParams()
+
+      if (filters.city?.trim()) {
+        queryParams.set('city', filters.city.trim())
+      }
+
+      if (filters.area?.trim()) {
+        queryParams.set('area', filters.area.trim())
+      }
+
+      if (filters.bloodGroup) {
+        queryParams.set('bloodGroup', filters.bloodGroup)
+      }
+
+      const queryString = queryParams.toString()
+
+      const url = queryString
+        ? `${API_URL}?${queryString}`
+        : API_URL
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || 'Failed to fetch registered donors.'
+        )
+      }
+
+      setDonors(data.donors || [])
+    } catch (err) {
+      setDonors([])
+      setError(
+        err.message ||
+          'Unable to connect to the server. Please try again.'
+      )
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  // Load donors when page opens
+  useEffect(() => {
+    fetchDonors({
+      bloodGroup: initialGroup,
     })
-    // Available donors first
-    .sort((a, b) => Number(b.available) - Number(a.available))
+  }, [fetchDonors, initialGroup])
 
-  const hasFilters = bloodGroup !== '' || city.trim() !== ''
+  // Search donors
+  const handleSearch = (event) => {
+    event.preventDefault()
 
+    fetchDonors({
+      city,
+      area,
+      bloodGroup,
+    })
+  }
+
+  // Clear all filters
   const clearFilters = () => {
-    setBloodGroup('')
-    setIncludeCompatible(false)
     setCity('')
+    setArea('')
+    setBloodGroup('')
+
+    fetchDonors({})
   }
 
   return (
     <PageContainer>
       <PageHeader
-        title="Find blood donors"
-        text="Search donor profiles by blood group and city."
+        title="Find Blood Donors"
+        text="Search registered donors by blood group, city and area."
       />
 
-      {/* Filters */}
-      <div className="card mt-8 p-5 sm:p-6">
-        <p className="label" id="group-label">
-          Blood group needed
+      {/* Search Filters */}
+      <form
+        onSubmit={handleSearch}
+        className="card mt-8 p-5 sm:p-6"
+      >
+        <p className="label" id="blood-group-label">
+          Select blood group
         </p>
 
         <div
           role="group"
-          aria-labelledby="group-label"
+          aria-labelledby="blood-group-label"
           className="flex flex-wrap gap-2"
         >
           <button
             type="button"
             aria-pressed={bloodGroup === ''}
-            onClick={() => {
-              setBloodGroup('')
-              setIncludeCompatible(false)
-            }}
+            onClick={() => setBloodGroup('')}
             className="chip"
           >
             All
@@ -135,25 +166,8 @@ function FindBlood() {
           ))}
         </div>
 
-        {bloodGroup !== '' && (
-          <label className="mt-4 flex cursor-pointer items-start gap-2.5 text-sm">
-            <input
-              type="checkbox"
-              checked={includeCompatible}
-              onChange={(e) => setIncludeCompatible(e.target.checked)}
-              className="mt-0.5 h-4 w-4 accent-blood"
-            />
-            <span>
-              Include compatible groups for a {formatGroup(bloodGroup)}{' '}
-              patient
-              <span className="block text-muted">
-                {CAN_RECEIVE_FROM[bloodGroup].map(formatGroup).join(', ')}
-              </span>
-            </span>
-          </label>
-        )}
-
-        <div className="mt-5 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          {/* City */}
           <div>
             <label htmlFor="city" className="label">
               City
@@ -164,86 +178,158 @@ function FindBlood() {
                 size={18}
                 className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
               />
+
               <input
                 id="city"
+                type="text"
                 value={city}
-                onChange={(e) => setCity(e.target.value)}
-                placeholder="Search by city, e.g. Surat"
+                onChange={(event) => setCity(event.target.value)}
+                placeholder="e.g. Ahmedabad"
                 className="field pl-10"
               />
             </div>
           </div>
 
-          {hasFilters && (
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="btn btn-secondary"
-            >
-              <X size={16} />
-              Clear filters
-            </button>
-          )}
-        </div>
-      </div>
+          {/* Area */}
+          <div>
+            <label htmlFor="area" className="label">
+              Area / Locality
+            </label>
 
-      {/* Results */}
-      <p className="mb-4 mt-8 text-sm text-muted" aria-live="polite">
-        <span className="font-semibold text-ink">{filteredDonors.length}</span>{' '}
-        {filteredDonors.length === 1 ? 'donor' : 'donors'} found
-      </p>
+            <div className="relative">
+              <MapPin
+                size={18}
+                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
+              />
 
-      <ul className="grid gap-4 md:grid-cols-2">
-        {filteredDonors.map((donor) => (
-          <li
-            key={donor.id}
-            className={`card flex items-center gap-4 p-5 ${
-              donor.available ? '' : 'bg-paper'
-            }`}
-          >
-            <BloodTag group={donor.bloodGroup} size="lg" />
-
-            <div className="min-w-0 flex-1">
-              <h2 className="truncate text-lg font-semibold">{donor.name}</h2>
-
-              <p className="mt-1 flex items-center gap-1.5 text-sm text-muted">
-                <MapPin size={15} className="shrink-0" />
-                {donor.city}
-              </p>
-
-              <div className="mt-2">
-                <Pill tone={donor.available ? 'ok' : 'neutral'}>
-                  {donor.available ? 'Available' : 'Unavailable'}
-                </Pill>
-              </div>
+              <input
+                id="area"
+                type="text"
+                value={area}
+                onChange={(event) => setArea(event.target.value)}
+                placeholder="e.g. Maninagar"
+                className="field pl-10"
+              />
             </div>
+          </div>
+        </div>
 
-            {donor.available && (
-              <a
-                href={`tel:${donor.phone}`}
-                className="btn btn-primary btn-sm shrink-0"
-                aria-label={`Call ${donor.name}`}
-              >
-                <Phone size={16} />
-                Call
-              </a>
-            )}
-          </li>
-        ))}
-      </ul>
+        {/* Action Buttons */}
+        <div className="mt-5 flex flex-wrap gap-3">
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn btn-primary"
+          >
+            <Search size={16} />
+            {loading ? 'Searching...' : 'Find Donors'}
+          </button>
 
-      {filteredDonors.length === 0 && (
-        <EmptyState
-          icon={Search}
-          title="No donors found"
-          text="Try another blood group or city, or include compatible groups."
-        />
+          <button
+            type="button"
+            onClick={clearFilters}
+            disabled={loading}
+            className="btn btn-secondary"
+          >
+            <X size={16} />
+            Clear Filters
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              fetchDonors({ city, area, bloodGroup })
+            }
+            disabled={loading}
+            className="btn btn-secondary"
+            aria-label="Refresh registered donors"
+          >
+            <RefreshCw size={16} />
+            Refresh
+          </button>
+        </div>
+      </form>
+
+      {/* Error Message */}
+      {error && (
+        <div
+          role="alert"
+          className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+        >
+          {error}
+        </div>
       )}
 
-      <DemoNote>
-        Demo data: donor names and contact numbers are samples, not verified
-        donors.
-      </DemoNote>
+      {/* Results Count */}
+      <p
+        className="mb-4 mt-8 text-sm text-muted"
+        aria-live="polite"
+      >
+        {loading
+          ? 'Loading donors...'
+          : `${donors.length} ${
+              donors.length === 1 ? 'donor' : 'donors'
+            } found`}
+      </p>
+
+      {/* Donor Results */}
+      {!loading && !error && donors.length > 0 && (
+        <ul className="grid gap-4 md:grid-cols-2">
+          {donors.map((donor) => (
+            <li
+              key={donor._id}
+              className="card p-5"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-semibold">
+                    {donor.name || 'Registered Donor'}
+                  </h2>
+
+                  <p className="mt-2 flex items-center gap-2 text-sm text-muted">
+                    <MapPin size={16} className="shrink-0" />
+
+                    <span>
+                      {[donor.area, donor.city]
+                        .filter(Boolean)
+                        .join(', ') || 'Location not provided'}
+                    </span>
+                  </p>
+                </div>
+
+                <span className="shrink-0 rounded-lg bg-red-50 px-3 py-2 font-bold text-red-700">
+                  {donor.bloodGroup || 'Not provided'}
+                </span>
+              </div>
+
+              {donor.phone ? (
+                <a
+                  href={`tel:${donor.phone}`}
+                  className="btn btn-primary btn-sm mt-5"
+                >
+                  <Phone size={16} />
+                  Contact Donor
+                </a>
+              ) : (
+                <p className="mt-5 text-sm text-muted">
+                  Contact number not provided
+                </p>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* Empty State */}
+      {!loading && !error && donors.length === 0 && (
+        <div className="mt-6">
+          <EmptyState
+            icon={Droplet}
+            title="No donors found"
+            text="Try another blood group, city or area."
+          />
+        </div>
+      )}
     </PageContainer>
   )
 }

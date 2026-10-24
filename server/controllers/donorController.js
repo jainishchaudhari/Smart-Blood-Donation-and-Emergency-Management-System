@@ -1,3 +1,4 @@
+
 const User = require('../models/User')
 const Donation = require('../models/Donation')
 
@@ -80,7 +81,55 @@ const getDonationHistory = async (req, res) => {
   }
 }
 
+// Get all registered donors with optional filters
+const getAllDonors = async (req, res) => {
+  try {
+    const { bloodGroup, city, area } = req.query
+
+    const filters = {
+      role: 'donor',
+    }
+
+    if (bloodGroup) {
+      filters.bloodGroup = bloodGroup
+    }
+
+    if (city?.trim()) {
+      filters.city = {
+        $regex: city.trim(),
+        $options: 'i',
+      }
+    }
+
+    if (area?.trim()) {
+      filters.area = {
+        $regex: area.trim(),
+        $options: 'i',
+      }
+    }
+
+    const donors = await User.find(filters)
+      .select('name bloodGroup city area phone')
+      .sort({ name: 1 })
+
+    return res.status(200).json({
+      success: true,
+      message: 'Registered donors fetched successfully',
+      count: donors.length,
+      donors,
+    })
+  } catch (error) {
+    console.error('Fetch donors error:', error.message)
+
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while fetching donors',
+    })
+  }
+}
+
 module.exports = {
   getDonorDashboard,
   getDonationHistory,
+  getAllDonors,
 }
