@@ -5,6 +5,7 @@ const router = express.Router()
 const {
   getHospitalDashboard,
   getHospitalRequests,
+  getHospitalDonations,
   createDonationFromRequest,
   updateHospitalDonationStatus,
 } = require('../controllers/hospitalController')
@@ -26,6 +27,14 @@ router.get(
   authorizeRoles('hospital'),
   getHospitalRequests
 )
+
+// Get all donations for the logged-in hospital
+router.get(
+  "/donations",
+  protect,
+  authorizeRoles("hospital"),
+  getHospitalDonations
+);
 
 // Create a scheduled donation from an accepted blood request
 router.post(

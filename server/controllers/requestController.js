@@ -18,7 +18,6 @@ const createBloodRequest = async (req, res) => {
       notes,
     } = req.body;
 
-    // Validate required fields
     if (
       !patientName ||
       !bloodGroup ||
@@ -36,7 +35,6 @@ const createBloodRequest = async (req, res) => {
       });
     }
 
-    // Validate units
     const parsedUnits = Number(units);
 
     if (!Number.isInteger(parsedUnits) || parsedUnits < 1) {
@@ -46,7 +44,6 @@ const createBloodRequest = async (req, res) => {
       });
     }
 
-    // Create blood request
     const bloodRequest = await BloodRequest.create({
       patientName,
       bloodGroup,
@@ -87,9 +84,15 @@ const createBloodRequest = async (req, res) => {
 // Get all blood requests
 const getAllBloodRequests = async (req, res) => {
   try {
-    const { city, area, bloodGroup, urgency, status } = req.query;
+    const {
+      city,
+      area,
+      bloodGroup,
+      urgency,
+      status,
+      myAccepted,
+    } = req.query;
 
-    // Build search filters dynamically
     const filter = {};
 
     if (city && city.trim()) {
@@ -114,12 +117,23 @@ const getAllBloodRequests = async (req, res) => {
       filter.urgency = urgency;
     }
 
-    if (status) {
+    if (myAccepted === "true") {
+      if (!req.user || !req.user._id) {
+        return res.status(401).json({
+          success: false,
+          message: "Please log in to view your accepted requests",
+        });
+      }
+
+      filter.status = "accepted";
+      filter.acceptedBy = req.user._id;
+    } else if (status) {
       filter.status = status;
     }
 
     const requests = await BloodRequest.find(filter)
       .populate("requestedBy", "name email role")
+      .populate("acceptedBy", "name email bloodGroup")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -142,7 +156,6 @@ const getBloodRequestById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Validate MongoDB ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
@@ -150,12 +163,10 @@ const getBloodRequestById = async (req, res) => {
       });
     }
 
-    const bloodRequest = await BloodRequest.findById(id).populate(
-      "requestedBy",
-      "name email role",
-    );
+    const bloodRequest = await BloodRequest.findById(id)
+      .populate("requestedBy", "name email role")
+      .populate("acceptedBy", "name email bloodGroup");
 
-    // Check whether request exists
     if (!bloodRequest) {
       return res.status(404).json({
         success: false,
@@ -178,42 +189,41 @@ const getBloodRequestById = async (req, res) => {
 };
 
 // Donor accepts a pending blood request
-
 const acceptBloodRequest = async (req, res) => {
   try {
-    const { id } = req.params
+    const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid blood request ID',
-      })
+        message: "Invalid blood request ID",
+      });
     }
 
-    const request = await BloodRequest.findById(id)
+    const request = await BloodRequest.findById(id);
 
     if (!request) {
       return res.status(404).json({
         success: false,
-        message: 'Blood request not found',
-      })
+        message: "Blood request not found",
+      });
     }
 
-    if (request.status !== 'pending') {
+    if (request.status !== "pending") {
       return res.status(409).json({
         success: false,
-        message: 'This blood request is no longer available',
-      })
+        message: "This blood request is no longer available",
+      });
     }
 
     const acceptedRequest = await BloodRequest.findOneAndUpdate(
       {
         _id: id,
-        status: 'pending',
+        status: "pending",
       },
       {
         $set: {
-          status: 'accepted',
+          status: "accepted",
           acceptedBy: req.user._id,
         },
       },
@@ -221,30 +231,31 @@ const acceptBloodRequest = async (req, res) => {
         new: true,
         runValidators: true,
       }
-    ).populate('acceptedBy', 'name email bloodGroup')
+    )
+      .populate("requestedBy", "name email role")
+      .populate("acceptedBy", "name email bloodGroup");
 
     if (!acceptedRequest) {
       return res.status(409).json({
         success: false,
-        message: 'This blood request has already been accepted',
-      })
+        message: "This blood request has already been accepted",
+      });
     }
 
     return res.status(200).json({
       success: true,
-      message: 'Blood request accepted successfully',
+      message: "Blood request accepted successfully",
       request: acceptedRequest,
-    })
+    });
   } catch (error) {
-    console.error('Accept blood request error:', error.message)
+    console.error("Accept blood request error:", error.message);
 
     return res.status(500).json({
       success: false,
-      message: 'Server error while accepting blood request',
-    })
+      message: "Server error while accepting blood request",
+    });
   }
-}
-
+};
 
 module.exports = {
   createBloodRequest,

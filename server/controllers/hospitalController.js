@@ -302,10 +302,55 @@ const updateHospitalDonationStatus = async (req, res) => {
   }
 }
 
+// Get donations for the logged-in hospital
+const getHospitalDonations = async (req, res) => {
+  try {
+    const hospital = await User.findById(req.user._id).select("-password");
+
+    if (!hospital || hospital.role !== "hospital") {
+      return res.status(403).json({
+        success: false,
+        message: "Only hospitals can view donations",
+      });
+    }
+
+    if (!hospital.name || !hospital.name.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Hospital account name is missing",
+      });
+    }
+
+    const donations = await Donation.find({
+      hospitalName: {
+        $regex: `^${hospital.name.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`,
+        $options: "i",
+      },
+    })
+      .populate("donor", "name email bloodGroup phone")
+      .populate("bloodRequest", "patientName bloodGroup units status")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: donations.length,
+      donations,
+    });
+  } catch (error) {
+    console.error("Get hospital donations error:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching hospital donations",
+    });
+  }
+};
+
 
 module.exports = {
   getHospitalDashboard,
   getHospitalRequests,
+  getHospitalDonations,
   createDonationFromRequest,
   updateHospitalDonationStatus,
 }

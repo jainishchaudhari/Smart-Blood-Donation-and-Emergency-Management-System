@@ -1,7 +1,15 @@
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Navigate } from 'react-router-dom'
-import { Search, ClipboardList, Plus, CalendarCheck } from 'lucide-react'
+import {
+  Search,
+  ClipboardList,
+  Plus,
+  CalendarCheck,
+  CheckCircle,
+  XCircle,
+  RefreshCw,
+} from 'lucide-react'
 
 import {
   ActionList,
@@ -40,6 +48,10 @@ const actions = [
   },
 ]
 
+function getErrorMessage(data, fallback) {
+  return data?.message || fallback
+}
+
 function HospitalDashboard() {
   const savedUser = localStorage.getItem('lifeflowUser')
   const token = localStorage.getItem('lifeflowToken')
@@ -68,106 +80,148 @@ function HospitalDashboard() {
   const [schedulingId, setSchedulingId] = useState(null)
   const [requestActionMessage, setRequestActionMessage] = useState('')
 
+  const [donations, setDonations] = useState([])
+  const [donationsLoading, setDonationsLoading] = useState(true)
+  const [donationsError, setDonationsError] = useState('')
+  const [updatingDonationId, setUpdatingDonationId] = useState(null)
+  const [donationActionMessage, setDonationActionMessage] = useState('')
+
   // Fetch dashboard statistics
+  const fetchDashboardStats = useCallback(async () => {
+    if (!token) return
+
+    try {
+      setStatsError('')
+
+      const response = await fetch(`${API_URL}/dashboard`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          getErrorMessage(data, 'Failed to load dashboard statistics.')
+        )
+      }
+
+      const dashboard = data.stats || data.data || data
+
+      setStats([
+        { label: 'Total requests', value: dashboard.totalRequests ?? 0 },
+        { label: 'Pending requests', value: dashboard.pendingRequests ?? 0 },
+        { label: 'Accepted requests', value: dashboard.acceptedRequests ?? 0 },
+        { label: 'Completed requests', value: dashboard.completedRequests ?? 0 },
+      ])
+    } catch (error) {
+      setStatsError(error.message || 'Unable to load dashboard statistics.')
+    }
+  }, [token])
+
   useEffect(() => {
-    if (!token || !currentUser || currentUser.role !== 'hospital') {
+    if (!token || currentUser?.role !== 'hospital') {
       setStatsLoading(false)
       return
     }
 
-    const fetchDashboardStats = async () => {
-      try {
-        setStatsLoading(true)
-        setStatsError('')
-
-        const response = await fetch(`${API_URL}/dashboard`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        })
-
-        const data = await response.json()
-
-        if (!response.ok || !data.success) {
-          throw new Error(
-            data.message || 'Failed to load dashboard statistics.'
-          )
-        }
-
-        const dashboard = data.stats || data.data || data
-
-        setStats([
-          {
-            label: 'Total requests',
-            value: dashboard.totalRequests ?? 0,
-          },
-          {
-            label: 'Pending requests',
-            value: dashboard.pendingRequests ?? 0,
-          },
-          {
-            label: 'Accepted requests',
-            value: dashboard.acceptedRequests ?? 0,
-          },
-          {
-            label: 'Completed requests',
-            value: dashboard.completedRequests ?? 0,
-          },
-        ])
-      } catch (error) {
-        setStatsError(
-          error.message || 'Unable to load dashboard statistics.'
-        )
-      } finally {
-        setStatsLoading(false)
-      }
+    const loadStats = async () => {
+      setStatsLoading(true)
+      await fetchDashboardStats()
+      setStatsLoading(false)
     }
 
-    fetchDashboardStats()
-  }, [token, currentUser?.role])
+    loadStats()
+  }, [token, currentUser?.role, fetchDashboardStats])
 
-  // Fetch accepted requests for this hospital
+  // Fetch accepted requests
+  const fetchAcceptedRequests = useCallback(async () => {
+    if (!token) return
+
+    try {
+      setRequestsError('')
+
+      const response = await fetch(`${API_URL}/requests`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          getErrorMessage(data, 'Failed to load accepted requests.')
+        )
+      }
+
+      const result = data.requests || data.data || []
+      setRequests(Array.isArray(result) ? result : [])
+    } catch (error) {
+      setRequestsError(error.message || 'Unable to load accepted requests.')
+    }
+  }, [token])
+
   useEffect(() => {
-    if (!token || !currentUser || currentUser.role !== 'hospital') {
+    if (!token || currentUser?.role !== 'hospital') {
       setRequestsLoading(false)
       return
     }
 
-    const fetchAcceptedRequests = async () => {
-      try {
-        setRequestsLoading(true)
-        setRequestsError('')
-
-        const response = await fetch(`${API_URL}/requests`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        })
-
-        const data = await response.json()
-
-        if (!response.ok || !data.success) {
-          throw new Error(
-            data.message || 'Failed to load accepted requests.'
-          )
-        }
-
-        const result = data.requests || data.data || []
-
-        setRequests(Array.isArray(result) ? result : [])
-      } catch (error) {
-        setRequestsError(
-          error.message || 'Unable to load accepted requests.'
-        )
-      } finally {
-        setRequestsLoading(false)
-      }
+    const loadRequests = async () => {
+      setRequestsLoading(true)
+      await fetchAcceptedRequests()
+      setRequestsLoading(false)
     }
 
-    fetchAcceptedRequests()
-  }, [token, currentUser?.role])
+    loadRequests()
+  }, [token, currentUser?.role, fetchAcceptedRequests])
 
-  // Schedule a donation for an accepted request
+  // Fetch donations
+  const fetchDonations = useCallback(async () => {
+    if (!token) return
+
+    try {
+      setDonationsError('')
+
+      const response = await fetch(`${API_URL}/donations`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          getErrorMessage(data, 'Failed to load donations.')
+        )
+      }
+
+      const result = data.donations || data.data || []
+      setDonations(Array.isArray(result) ? result : [])
+    } catch (error) {
+      setDonationsError(error.message || 'Unable to load donations.')
+    }
+  }, [token])
+
+  useEffect(() => {
+    if (!token || currentUser?.role !== 'hospital') {
+      setDonationsLoading(false)
+      return
+    }
+
+    const loadDonations = async () => {
+      setDonationsLoading(true)
+      await fetchDonations()
+      setDonationsLoading(false)
+    }
+
+    loadDonations()
+  }, [token, currentUser?.role, fetchDonations])
+
+  // Schedule donation
   const handleScheduleDonation = async (requestId) => {
     if (!token || !requestId) return
 
@@ -197,54 +251,72 @@ function HospitalDashboard() {
       const data = await response.json()
 
       if (!response.ok || !data.success) {
-        throw new Error(data.message || 'Unable to schedule donation.')
+        throw new Error(getErrorMessage(data, 'Unable to schedule donation.'))
       }
 
       setRequestActionMessage('Donation scheduled successfully.')
 
-      // Remove the scheduled request from the accepted list
       setRequests((previous) =>
         previous.filter((request) => request._id !== requestId)
       )
 
-      // Refresh statistics
-      const statsResponse = await fetch(`${API_URL}/dashboard`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      const statsData = await statsResponse.json()
-
-      if (statsResponse.ok && statsData.success) {
-        const dashboard =
-          statsData.stats || statsData.data || statsData
-
-        setStats([
-          {
-            label: 'Total requests',
-            value: dashboard.totalRequests ?? 0,
-          },
-          {
-            label: 'Pending requests',
-            value: dashboard.pendingRequests ?? 0,
-          },
-          {
-            label: 'Accepted requests',
-            value: dashboard.acceptedRequests ?? 0,
-          },
-          {
-            label: 'Completed requests',
-            value: dashboard.completedRequests ?? 0,
-          },
-        ])
-      }
+      await Promise.all([fetchDashboardStats(), fetchDonations()])
     } catch (error) {
-      setRequestsError(
-        error.message || 'Unable to schedule donation.'
-      )
+      setRequestsError(error.message || 'Unable to schedule donation.')
     } finally {
       setSchedulingId(null)
+    }
+  }
+
+  // Update donation status
+  const handleDonationStatus = async (donation, nextStatus) => {
+    if (!token || !donation?._id) return
+
+    const actionLabel =
+      nextStatus === 'completed' ? 'mark this donation as completed' : 'cancel this donation'
+
+    const confirmed = window.confirm(
+      `Are you sure you want to ${actionLabel}?`
+    )
+
+    if (!confirmed) return
+
+    try {
+      setUpdatingDonationId(donation._id)
+      setDonationActionMessage('')
+      setDonationsError('')
+
+      const response = await fetch(
+        `${API_URL}/donations/${donation._id}/status`,
+        {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status: nextStatus }),
+        }
+      )
+
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          getErrorMessage(data, 'Unable to update donation status.')
+        )
+      }
+
+      setDonationActionMessage(
+        `Donation status updated to ${nextStatus}.`
+      )
+
+      await Promise.all([fetchDonations(), fetchDashboardStats()])
+    } catch (error) {
+      setDonationsError(
+        error.message || 'Unable to update donation status.'
+      )
+    } finally {
+      setUpdatingDonationId(null)
     }
   }
 
@@ -253,7 +325,7 @@ function HospitalDashboard() {
     return <Navigate to="/login" replace />
   }
 
-  // Redirect accounts with a different role
+  // Redirect if the account has a different role
   if (currentUser.role !== 'hospital') {
     const dashboardRoutes = {
       user: '/user-dashboard',
@@ -327,24 +399,19 @@ function HospitalDashboard() {
           </p>
         )}
 
-        {!requestsLoading &&
-          !requestsError &&
-          requests.length === 0 && (
-            <div className="card mt-4 p-5">
-              <p className="font-medium">No accepted requests found.</p>
-              <p className="mt-1 text-sm text-muted">
-                Accepted requests for this hospital will appear here.
-              </p>
-            </div>
-          )}
+        {!requestsLoading && !requestsError && requests.length === 0 && (
+          <div className="card mt-4 p-5">
+            <p className="font-medium">No accepted requests found.</p>
+            <p className="mt-1 text-sm text-muted">
+              Accepted requests for this hospital will appear here.
+            </p>
+          </div>
+        )}
 
         {requests.length > 0 && (
           <div className="mt-4 grid gap-4">
             {requests.map((request) => (
-              <article
-                key={request._id}
-                className="card p-5"
-              >
+              <article key={request._id} className="card p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <h3 className="text-lg font-semibold">
@@ -405,6 +472,168 @@ function HospitalDashboard() {
         )}
       </section>
 
+      {/* Donation history and status */}
+      <section className="mt-10">
+        <SectionTitle>Donation history &amp; status</SectionTitle>
+
+        {donationsLoading && (
+          <p className="mt-4 text-sm text-muted">
+            Loading donations...
+          </p>
+        )}
+
+        {donationsError && (
+          <p className="mt-4 text-sm text-blood" role="alert">
+            {donationsError}
+          </p>
+        )}
+
+        {donationActionMessage && (
+          <p className="mt-4 text-sm text-ok" role="status">
+            {donationActionMessage}
+          </p>
+        )}
+
+        {!donationsLoading &&
+          !donationsError &&
+          donations.length === 0 && (
+            <div className="card mt-4 p-5">
+              <p className="font-medium">No donations found.</p>
+              <p className="mt-1 text-sm text-muted">
+                Scheduled donations will appear here.
+              </p>
+            </div>
+          )}
+
+        {donations.length > 0 && (
+          <div className="mt-4 grid gap-4">
+            {donations.map((donation) => {
+              const status = (
+                donation.status || 'scheduled'
+              ).toLowerCase()
+
+              return (
+                <article key={donation._id} className="card p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-lg font-semibold">
+                        {donation.donor?.name || 'Donor details unavailable'}
+                      </h3>
+
+                      <p className="mt-1 text-sm text-muted">
+                        {donation.hospitalName || currentUser.name}
+                        {donation.city ? ` · ${donation.city}` : ''}
+                      </p>
+                    </div>
+
+                    <BloodTag group={donation.bloodGroup} />
+                  </div>
+
+                  <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+                    <p>
+                      <span className="text-muted">Patient: </span>
+                      <strong>
+                        {donation.bloodRequest?.patientName || 'No linked request'}
+                      </strong>
+                    </p>
+
+                    <p>
+                      <span className="text-muted">Units: </span>
+                      <strong>{donation.units ?? '—'}</strong>
+                    </p>
+
+                    <p>
+                      <span className="text-muted">Donor email: </span>
+                      <strong>{donation.donor?.email || 'Not available'}</strong>
+                    </p>
+
+                    <p>
+                      <span className="text-muted">Donation date: </span>
+                      <strong>
+                        {donation.donationDate
+                          ? new Date(donation.donationDate).toLocaleString()
+                          : 'Not scheduled'}
+                      </strong>
+                    </p>
+
+                    <p>
+                      <span className="text-muted">Request status: </span>
+                      <Pill>
+                        {donation.bloodRequest?.status || 'Not linked'}
+                      </Pill>
+                    </p>
+
+                    <p>
+                      <span className="text-muted">Donation status: </span>
+                      <Pill>{status}</Pill>
+                    </p>
+                  </div>
+
+                  {donation.notes && (
+                    <p className="mt-3 text-sm text-muted">
+                      Notes: {donation.notes}
+                    </p>
+                  )}
+
+                  {status === 'scheduled' && (
+                    <div className="mt-5 flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleDonationStatus(donation, 'completed')
+                        }
+                        disabled={updatingDonationId === donation._id}
+                        className="btn btn-primary inline-flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <CheckCircle size={18} />
+                        {updatingDonationId === donation._id
+                          ? 'Updating...'
+                          : 'Mark Completed'}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleDonationStatus(donation, 'cancelled')
+                        }
+                        disabled={updatingDonationId === donation._id}
+                        className="inline-flex items-center gap-2 rounded-lg border border-blood/30 px-4 py-2 font-medium text-blood hover:bg-plasma disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <XCircle size={18} />
+                        Cancel Donation
+                      </button>
+                    </div>
+                  )}
+
+                  {status !== 'scheduled' && (
+                    <div className="mt-4 flex items-center gap-2 text-sm text-muted">
+                      {status === 'completed' ? (
+                        <CheckCircle size={17} />
+                      ) : (
+                        <XCircle size={17} />
+                      )}
+                      This donation is {status}; status changes are disabled.
+                    </div>
+                  )}
+                </article>
+              )
+            })}
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={() =>
+            Promise.all([fetchDonations(), fetchDashboardStats()])
+          }
+          disabled={donationsLoading}
+          className="btn mt-5 inline-flex items-center gap-2 disabled:opacity-60"
+        >
+          <RefreshCw size={17} />
+          Refresh donations
+        </button>
+      </section>
+
       {/* Blood inventory */}
       <section className="mt-10">
         <h2 className="text-xl font-semibold">Blood inventory</h2>
@@ -431,9 +660,7 @@ function HospitalDashboard() {
                 className={`flex items-center gap-4 p-4 sm:p-5 ${
                   index >= 2 ? 'sm:border-t sm:border-line' : ''
                 } ${
-                  index % 2 === 1
-                    ? 'sm:border-l sm:border-line'
-                    : ''
+                  index % 2 === 1 ? 'sm:border-l sm:border-line' : ''
                 }`}
               >
                 <span className="flex w-[4.5rem] shrink-0">
@@ -446,7 +673,7 @@ function HospitalDashboard() {
                       {item.units} units
                     </span>
 
-                    {isLow && <Pill tone="critical">Low</Pill>}
+                    {isLow && <Pill>Low stock</Pill>}
                   </div>
 
                   <div
@@ -468,8 +695,10 @@ function HospitalDashboard() {
       </section>
 
       {/* Quick actions */}
-      <SectionTitle>Quick actions</SectionTitle>
-      <ActionList items={actions} />
+      <section className="mt-10">
+        <SectionTitle>Quick actions</SectionTitle>
+        <ActionList items={actions} />
+      </section>
 
       {/* Safety reminder */}
       <div className="mt-10 rounded-xl border border-blood/20 bg-plasma p-5">
@@ -484,8 +713,8 @@ function HospitalDashboard() {
       </div>
 
       <DemoNote>
-        Dashboard statistics and accepted requests are fetched from the
-        backend. Blood inventory still uses sample data.
+        Dashboard statistics, accepted requests and donation history are
+        fetched from the backend. Blood inventory still uses sample data.
       </DemoNote>
     </DashboardShell>
   )
