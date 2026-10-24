@@ -1,12 +1,14 @@
+
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CheckCircle, Hospital, Droplet } from 'lucide-react'
+import { CheckCircle, Hospital, Droplet, MapPin } from 'lucide-react'
 import {
   BloodTag,
   PageContainer,
   PageHeader,
 } from '../components/ui'
 import { BLOOD_GROUPS, formatGroup } from '../lib/blood'
+import MapPicker from '../components/MapPicker'
 
 const urgencyLevels = [
   { value: 'Critical', hint: 'Immediate need' },
@@ -22,6 +24,8 @@ const emptyForm = {
   city: '',
   contact: '',
   urgency: 'High',
+  latitude: null,
+  longitude: null,
 }
 
 function EmergencyRequest() {
@@ -29,15 +33,28 @@ function EmergencyRequest() {
   const [submitted, setSubmitted] = useState(false)
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    })
+    const { name, value } = e.target
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+  }
+
+  const handleLocationSelect = ({ latitude, longitude }) => {
+    setFormData((prev) => ({
+      ...prev,
+      latitude,
+      longitude,
+    }))
   }
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    console.log(formData)
+
+    // Demo only: currently logs the request; it is not sent to the backend.
+    console.log('Emergency request:', formData)
+
     setSubmitted(true)
     window.scrollTo(0, 0)
   }
@@ -45,6 +62,7 @@ function EmergencyRequest() {
   const handleReset = () => {
     setFormData(emptyForm)
     setSubmitted(false)
+    window.scrollTo(0, 0)
   }
 
   if (submitted) {
@@ -53,7 +71,10 @@ function EmergencyRequest() {
         <div className="card p-6 sm:p-8">
           <CheckCircle className="text-ok" size={40} />
 
-          <h1 className="mt-4 text-3xl font-bold">Request submitted</h1>
+          <h1 className="mt-4 text-3xl font-bold">
+            Request submitted
+          </h1>
+
           <p className="mt-2 text-muted">
             Here is what you entered for {formData.patientName}.
           </p>
@@ -64,18 +85,42 @@ function EmergencyRequest() {
             <div className="text-sm">
               <p className="flex items-center gap-2 font-semibold">
                 <Droplet size={16} className="text-blood" />
-                {formData.units} {Number(formData.units) === 1 ? 'unit' : 'units'},{' '}
+                {formData.units}{' '}
+                {Number(formData.units) === 1 ? 'unit' : 'units'},{' '}
                 {formData.urgency} urgency
               </p>
+
               <p className="mt-1 flex items-center gap-2 text-muted">
                 <Hospital size={16} />
                 {formData.hospital}, {formData.city}
               </p>
-              <p className="mt-1 text-muted">Contact: {formData.contact}</p>
+
+              <p className="mt-1 text-muted">
+                Contact: {formData.contact}
+              </p>
             </div>
           </div>
 
-          <p className="hint">
+          <div className="mt-4 rounded-lg border border-line bg-paper p-4">
+            <p className="flex items-center gap-2 font-semibold">
+              <MapPin size={17} className="text-blood" />
+              Selected hospital coordinates
+            </p>
+
+            {formData.latitude !== null &&
+            formData.longitude !== null ? (
+              <div className="mt-2 text-sm text-muted">
+                <p>Latitude: {formData.latitude.toFixed(6)}</p>
+                <p>Longitude: {formData.longitude.toFixed(6)}</p>
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-muted">
+                No map location selected.
+              </p>
+            )}
+          </div>
+
+          <p className="hint mt-4">
             Demo only: this request is not sent to the backend yet.
           </p>
 
@@ -83,6 +128,7 @@ function EmergencyRequest() {
             <Link to="/show-requests" className="btn btn-primary">
               View all requests
             </Link>
+
             <button
               type="button"
               onClick={handleReset}
@@ -103,15 +149,21 @@ function EmergencyRequest() {
         text="Enter the details so donors and hospitals can respond."
       />
 
-      <form onSubmit={handleSubmit} className="card mt-8 space-y-7 p-6 sm:p-8">
-        {/* Patient */}
+      <form
+        onSubmit={handleSubmit}
+        className="card mt-8 space-y-7 p-6 sm:p-8"
+      >
+        {/* Patient details */}
         <fieldset className="space-y-5">
-          <legend className="mb-4 text-lg font-semibold">Patient</legend>
+          <legend className="mb-4 text-lg font-semibold">
+            Patient
+          </legend>
 
           <div>
             <label htmlFor="patientName" className="label">
               Patient name
             </label>
+
             <input
               id="patientName"
               name="patientName"
@@ -144,6 +196,7 @@ function EmergencyRequest() {
                     required={index === 0}
                     className="peer sr-only"
                   />
+
                   <span className="chip px-4 py-2.5 peer-checked:border-blood peer-checked:bg-blood peer-checked:text-white peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-blood">
                     {formatGroup(group)}
                   </span>
@@ -156,6 +209,7 @@ function EmergencyRequest() {
             <label htmlFor="units" className="label">
               Units required
             </label>
+
             <input
               id="units"
               type="number"
@@ -172,7 +226,7 @@ function EmergencyRequest() {
 
         <hr className="border-line" />
 
-        {/* Location */}
+        {/* Hospital details and map */}
         <fieldset className="space-y-5">
           <legend className="mb-4 text-lg font-semibold">
             Hospital and contact
@@ -182,6 +236,7 @@ function EmergencyRequest() {
             <label htmlFor="hospital" className="label">
               Hospital name
             </label>
+
             <input
               id="hospital"
               name="hospital"
@@ -198,6 +253,7 @@ function EmergencyRequest() {
               <label htmlFor="city" className="label">
                 City
               </label>
+
               <input
                 id="city"
                 name="city"
@@ -213,6 +269,7 @@ function EmergencyRequest() {
               <label htmlFor="contact" className="label">
                 Contact number
               </label>
+
               <input
                 id="contact"
                 type="tel"
@@ -226,13 +283,33 @@ function EmergencyRequest() {
               />
             </div>
           </div>
+
+          <div className="space-y-3 pt-2">
+            <div>
+              <h2 className="flex items-center gap-2 text-lg font-semibold">
+                <MapPin size={20} className="text-blood" />
+                Select Hospital Location
+              </h2>
+
+              <p className="mt-1 text-sm text-muted">
+                Click on the map, drag the marker, or use your current
+                location to select the hospital coordinates.
+              </p>
+            </div>
+
+            <MapPicker
+              onLocationSelect={handleLocationSelect}
+            />
+          </div>
         </fieldset>
 
         <hr className="border-line" />
 
         {/* Urgency */}
         <fieldset>
-          <legend className="mb-4 text-lg font-semibold">Urgency</legend>
+          <legend className="mb-4 text-lg font-semibold">
+            Urgency
+          </legend>
 
           <div className="grid gap-3 sm:grid-cols-3">
             {urgencyLevels.map((level) => (
@@ -245,16 +322,25 @@ function EmergencyRequest() {
                   onChange={handleChange}
                   className="peer sr-only"
                 />
+
                 <span className="block h-full rounded-lg border border-ink/20 bg-white p-3 transition-colors hover:border-ink/40 peer-checked:border-blood peer-checked:bg-plasma peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-blood">
-                  <span className="block font-semibold">{level.value}</span>
-                  <span className="block text-sm text-muted">{level.hint}</span>
+                  <span className="block font-semibold">
+                    {level.value}
+                  </span>
+
+                  <span className="block text-sm text-muted">
+                    {level.hint}
+                  </span>
                 </span>
               </label>
             ))}
           </div>
         </fieldset>
 
-        <button type="submit" className="btn btn-primary w-full py-3.5">
+        <button
+          type="submit"
+          className="btn btn-primary w-full py-3.5"
+        >
           Submit emergency request
         </button>
       </form>
