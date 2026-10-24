@@ -307,4 +307,5 @@ module.exports = {
   getHospitalDashboard,
   getHospitalRequests,
   createDonationFromRequest,
+  updateHospitalDonationStatus,
 }

@@ -6,6 +6,7 @@ const {
   getHospitalDashboard,
   getHospitalRequests,
   createDonationFromRequest,
+  updateHospitalDonationStatus,
 } = require('../controllers/hospitalController')
 
 const { protect, authorizeRoles } = require('../middleware/authMiddleware')
@@ -32,6 +33,14 @@ router.post(
   protect,
   authorizeRoles('hospital'),
   createDonationFromRequest
+)
+
+// Update donation status
+router.patch(
+  '/donations/:id/status',
+  protect,
+  authorizeRoles('hospital'),
+  updateHospitalDonationStatus
 )
 
 module.exports = router
