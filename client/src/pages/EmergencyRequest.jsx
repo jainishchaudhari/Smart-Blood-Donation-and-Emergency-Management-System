@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CheckCircle, Hospital, Droplet, MapPin } from 'lucide-react'
@@ -9,6 +8,11 @@ import {
 } from '../components/ui'
 import { BLOOD_GROUPS, formatGroup } from '../lib/blood'
 import MapPicker from '../components/MapPicker'
+
+const API_URL = 'http://localhost:5000/api/requests'
+
+// Backend stores urgency in lowercase: low / medium / high / critical
+const URGENCY_TO_API = { Critical: 'critical', High: 'high', Normal: 'medium' }
 
 const urgencyLevels = [
   { value: 'Critical', hint: 'Immediate need' },
@@ -22,8 +26,18 @@ const emptyForm = {
   units: '',
   hospital: '',
   city: '',
+  area: '',
   contact: '',
   urgency: 'High',
+  patientAge: '',
+  patientGender: '',
+  medicalCondition: '',
+  attendantName: '',
+  alternateContact: '',
+  hospitalAddress: '',
+  requiredBy: '',
+  notes: '',
+  consent: false,
   latitude: null,
   longitude: null,
 }
@@ -31,13 +45,15 @@ const emptyForm = {
 function EmergencyRequest() {
   const [formData, setFormData] = useState(emptyForm)
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
 
   const handleChange = (e) => {
-    const { name, value } = e.target
+    const { name, value, type, checked } = e.target
 
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: type === 'checkbox' ? checked : value,
     }))
   }
 
@@ -49,19 +65,74 @@ function EmergencyRequest() {
     }))
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    setSubmitError('')
 
-    // Demo only: currently logs the request; it is not sent to the backend.
-    console.log('Emergency request:', formData)
+    if (formData.latitude === null || formData.longitude === null) {
+      setSubmitError('Please select the hospital location on the map.')
+      return
+    }
 
-    setSubmitted(true)
-    window.scrollTo(0, 0)
+    const token = localStorage.getItem('lifeflowToken')
+
+    if (!token) {
+      setSubmitError('Please log in before submitting a request.')
+      return
+    }
+
+    setSubmitting(true)
+
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          patientName: formData.patientName,
+          bloodGroup: formData.bloodGroup,
+          units: Number(formData.units),
+          hospitalName: formData.hospital,
+          city: formData.city,
+          area: formData.area,
+          latitude: formData.latitude ?? undefined,
+          longitude: formData.longitude ?? undefined,
+          contactNumber: formData.contact,
+          patientAge: formData.patientAge,
+          patientGender: formData.patientGender,
+          medicalCondition: formData.medicalCondition,
+          hospitalAddress: formData.hospitalAddress,
+          attendantName: formData.attendantName,
+          alternateContact: formData.alternateContact,
+          requiredBy: formData.requiredBy
+            ? new Date(formData.requiredBy).toISOString()
+            : undefined,
+          notes: formData.notes,
+          urgency: URGENCY_TO_API[formData.urgency] || 'medium',
+        }),
+      })
+
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Could not submit the request.')
+      }
+
+      setSubmitted(true)
+      window.scrollTo(0, 0)
+    } catch (err) {
+      setSubmitError(err.message || 'Could not submit the request.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const handleReset = () => {
     setFormData(emptyForm)
     setSubmitted(false)
+    setSubmitError('')
     window.scrollTo(0, 0)
   }
 
@@ -76,7 +147,7 @@ function EmergencyRequest() {
           </h1>
 
           <p className="mt-2 text-muted">
-            Here is what you entered for {formData.patientName}.
+            Your request was saved for {formData.patientName}.
           </p>
 
           <div className="mt-6 flex items-center gap-4 rounded-lg border border-line bg-paper p-4">
@@ -92,13 +163,37 @@ function EmergencyRequest() {
 
               <p className="mt-1 flex items-center gap-2 text-muted">
                 <Hospital size={16} />
-                {formData.hospital}, {formData.city}
+                {formData.hospital}, {formData.area}, {formData.city}
               </p>
 
               <p className="mt-1 text-muted">
                 Contact: {formData.contact}
               </p>
             </div>
+          </div>
+
+          <div className="mt-4 space-y-1 rounded-lg border border-line bg-paper p-4 text-sm text-muted">
+            {formData.patientAge && (
+              <p>
+                Patient: {formData.patientAge} yrs
+                {formData.patientGender ? `, ${formData.patientGender}` : ''}
+              </p>
+            )}
+            {formData.medicalCondition && (
+              <p>Reason: {formData.medicalCondition}</p>
+            )}
+            {formData.requiredBy && (
+              <p>
+                Required by:{' '}
+                {new Date(formData.requiredBy).toLocaleString('en-IN')}
+              </p>
+            )}
+            {formData.attendantName && (
+              <p>Contact person: {formData.attendantName}</p>
+            )}
+            {formData.alternateContact && (
+              <p>Alternate contact: {formData.alternateContact}</p>
+            )}
           </div>
 
           <div className="mt-4 rounded-lg border border-line bg-paper p-4">
@@ -119,10 +214,6 @@ function EmergencyRequest() {
               </p>
             )}
           </div>
-
-          <p className="hint mt-4">
-            Demo only: this request is not sent to the backend yet.
-          </p>
 
           <div className="mt-6 flex flex-wrap gap-3">
             <Link to="/show-requests" className="btn btn-primary">
@@ -222,6 +313,79 @@ function EmergencyRequest() {
               placeholder="Number of units"
             />
           </div>
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div>
+              <label htmlFor="patientAge" className="label">
+                Patient age
+              </label>
+
+              <input
+                id="patientAge"
+                type="number"
+                name="patientAge"
+                min="0"
+                max="120"
+                value={formData.patientAge}
+                onChange={handleChange}
+                className="field"
+                placeholder="Age in years"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="patientGender" className="label">
+                Gender
+              </label>
+
+              <select
+                id="patientGender"
+                name="patientGender"
+                value={formData.patientGender}
+                onChange={handleChange}
+                className="field"
+              >
+                <option value="">Select gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="medicalCondition" className="label">
+              Reason / medical condition
+            </label>
+
+            <input
+              id="medicalCondition"
+              name="medicalCondition"
+              value={formData.medicalCondition}
+              onChange={handleChange}
+              className="field"
+              placeholder="e.g. Accident, surgery, dengue, thalassemia"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="requiredBy" className="label">
+              Blood required by
+            </label>
+
+            <input
+              id="requiredBy"
+              type="datetime-local"
+              name="requiredBy"
+              value={formData.requiredBy}
+              onChange={handleChange}
+              required
+              min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+                .toISOString()
+                .slice(0, 16)}
+              className="field"
+            />
+          </div>
         </fieldset>
 
         <hr className="border-line" />
@@ -245,6 +409,22 @@ function EmergencyRequest() {
               required
               className="field"
               placeholder="Enter hospital name"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="hospitalAddress" className="label">
+              Hospital address
+            </label>
+
+            <textarea
+              id="hospitalAddress"
+              name="hospitalAddress"
+              rows={2}
+              value={formData.hospitalAddress}
+              onChange={handleChange}
+              className="field"
+              placeholder="Street, landmark, ward / floor"
             />
           </div>
 
@@ -282,6 +462,55 @@ function EmergencyRequest() {
                 placeholder="Enter contact number"
               />
             </div>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div>
+              <label htmlFor="attendantName" className="label">
+                Contact person name
+              </label>
+
+              <input
+                id="attendantName"
+                name="attendantName"
+                value={formData.attendantName}
+                onChange={handleChange}
+                className="field"
+                placeholder="Relative / attendant name"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="alternateContact" className="label">
+                Alternate contact number
+              </label>
+
+              <input
+                id="alternateContact"
+                type="tel"
+                name="alternateContact"
+                value={formData.alternateContact}
+                onChange={handleChange}
+                className="field"
+                placeholder="Optional"
+              />
+            </div>
+          </div>
+
+          <div className="sm:max-w-xs">
+            <label htmlFor="area" className="label">
+              Area
+            </label>
+
+            <input
+              id="area"
+              name="area"
+              value={formData.area}
+              onChange={handleChange}
+              required
+              className="field"
+              placeholder="Enter area / locality"
+            />
           </div>
 
           <div className="space-y-3 pt-2">
@@ -337,11 +566,61 @@ function EmergencyRequest() {
           </div>
         </fieldset>
 
+        <hr className="border-line" />
+
+        <fieldset className="space-y-5">
+          <legend className="mb-4 text-lg font-semibold">
+            Additional information
+          </legend>
+
+          <div>
+            <label htmlFor="notes" className="label">
+              Notes for donors
+            </label>
+
+            <textarea
+              id="notes"
+              name="notes"
+              rows={3}
+              value={formData.notes}
+              onChange={handleChange}
+              className="field"
+              placeholder="Any extra details: ward number, doctor name, whether platelets are needed, etc."
+            />
+          </div>
+
+          <label className="flex cursor-pointer items-start gap-3 text-sm">
+            <input
+              type="checkbox"
+              name="consent"
+              checked={formData.consent}
+              onChange={handleChange}
+              required
+              className="mt-1"
+            />
+
+            <span>
+              I confirm that this request is genuine and I agree to share
+              these details with donors and hospitals.
+            </span>
+          </label>
+        </fieldset>
+
+        {submitError && (
+          <p
+            role="alert"
+            className="rounded-lg bg-red-50 p-3 text-sm text-red-700"
+          >
+            {submitError}
+          </p>
+        )}
+
         <button
           type="submit"
+          disabled={submitting}
           className="btn btn-primary w-full py-3.5"
         >
-          Submit emergency request
+          {submitting ? 'Submitting...' : 'Submit emergency request'}
         </button>
       </form>
     </PageContainer>

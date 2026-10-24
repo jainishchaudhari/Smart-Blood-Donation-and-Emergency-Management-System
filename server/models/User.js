@@ -59,11 +59,50 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    // ---- Donor profile fields ----
+    dateOfBirth: {
+      type: Date,
+    },
+
+    area: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+
+    address: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+
+    // GeoJSON point: coordinates are [longitude, latitude].
+    // No defaults on purpose: a half-empty location breaks the 2dsphere index.
+    location: {
+      type: {
+        type: String,
+        enum: ['Point'],
+      },
+      coordinates: {
+        type: [Number],
+        default: undefined,
+      },
+    },
+
+    // true once a donor has saved a complete profile (incl. location)
+    profileCompleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
   }
 )
+
+// Needed for "find donors near this point" queries
+userSchema.index({ location: '2dsphere' })
 
 const User = mongoose.model('User', userSchema)
 

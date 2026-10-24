@@ -1,5 +1,4 @@
-
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   MapContainer,
   TileLayer,
@@ -38,10 +37,18 @@ function MapClickHandler({ onSelect }) {
   return null
 }
 
-function MapCenter({ position }) {
+// Re-centers the map only when the selected position actually changes.
+// (Doing this during render made the map snap back on every re-render,
+// e.g. while typing in the form fields.)
+function MapCenter({ position, zoom }) {
   const map = useMap()
+  const lat = position?.[0]
+  const lng = position?.[1]
 
-  map.setView(position, map.getZoom())
+  useEffect(() => {
+    if (lat == null || lng == null) return
+    map.setView([lat, lng], zoom ?? map.getZoom())
+  }, [map, lat, lng, zoom])
 
   return null
 }
@@ -55,10 +62,12 @@ function MapPicker({
   )
   const [error, setError] = useState('')
   const [locating, setLocating] = useState(false)
+  const [zoomTo, setZoomTo] = useState(null)
 
   const selectedPosition = position || DEFAULT_POSITION
 
   const selectPosition = (newPosition) => {
+    setZoomTo(null)
     setPosition(newPosition)
     setError('')
 
@@ -86,6 +95,7 @@ function MapPicker({
           result.coords.latitude,
           result.coords.longitude,
         ])
+        setZoomTo(16)
 
         setLocating(false)
       },
@@ -114,7 +124,7 @@ function MapPicker({
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted">
-          Click on the map or drag the marker to select a location.
+          Click on the map to place the marker, then drag it to adjust.
         </p>
 
         <button
@@ -150,15 +160,17 @@ function MapPicker({
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maxZoom={19}
           />
 
-          <MapCenter position={selectedPosition} />
+          <MapCenter position={position} zoom={zoomTo} />
 
           <MapClickHandler onSelect={selectPosition} />
 
+          {position && (
           <Marker
-            position={selectedPosition}
+            position={position}
             icon={defaultIcon}
             draggable
             eventHandlers={{
@@ -173,6 +185,7 @@ function MapPicker({
               },
             }}
           />
+          )}
         </MapContainer>
       </div>
 

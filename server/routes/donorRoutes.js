@@ -1,9 +1,10 @@
-
 const express = require('express')
 
 const router = express.Router()
 
 const {
+  getDonorProfile,
+  updateDonorProfile,
   getDonorDashboard,
   getDonationHistory,
   createDonation,
@@ -21,6 +22,21 @@ router.get(
   protect,
   authorizeRoles('user', 'donor', 'hospital', 'admin'),
   getAllDonors
+)
+
+// Donor's own profile (view and create/update)
+router.get(
+  '/profile',
+  protect,
+  authorizeRoles('donor'),
+  getDonorProfile
+)
+
+router.put(
+  '/profile',
+  protect,
+  authorizeRoles('donor'),
+  updateDonorProfile
 )
 
 // Donor dashboard

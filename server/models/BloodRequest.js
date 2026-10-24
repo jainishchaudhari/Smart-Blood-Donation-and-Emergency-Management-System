@@ -1,4 +1,3 @@
-
 const mongoose = require('mongoose')
 
 const bloodRequestSchema = new mongoose.Schema(
@@ -49,6 +48,46 @@ const bloodRequestSchema = new mongoose.Schema(
       type: Number,
       min: -180,
       max: 180,
+    },
+
+    patientAge: {
+      type: Number,
+      min: 0,
+      max: 120,
+    },
+
+    patientGender: {
+      type: String,
+      enum: ['male', 'female', 'other', ''],
+      default: '',
+    },
+
+    medicalCondition: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+
+    hospitalAddress: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+
+    attendantName: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+
+    alternateContact: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+
+    requiredBy: {
+      type: Date,
     },
 
     contactNumber: {

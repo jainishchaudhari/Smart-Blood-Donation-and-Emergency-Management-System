@@ -22,6 +22,7 @@ const actions = [
     text: 'Explore blood groups and donor profiles.',
   },
   {
+    to: '/donor-profile',
     icon: UserRound,
     title: 'My profile',
     text: 'Manage your donor profile and personal details.',

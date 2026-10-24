@@ -10,6 +10,8 @@ import {
   ClipboardList,
   RefreshCw,
 } from "lucide-react";
+import { Link } from "react-router-dom";
+import RequestsMap from "../components/RequestsMap";
 
 const API_URL = "http://localhost:5000/api/requests";
 
@@ -154,10 +156,15 @@ export default function ShowRequests() {
   const filteredRequests = requests.filter((request) => {
     if (urgencyFilter === "all") return true;
 
-    return (
-      (request.urgency || "").toLowerCase() ===
-      urgencyFilter.toLowerCase()
-    );
+    const urgency = (request.urgency || "medium").toLowerCase();
+
+    // Backend stores low / medium / high / critical.
+    // The "normal" filter covers everything that is not high or critical.
+    if (urgencyFilter === "normal") {
+      return urgency !== "critical" && urgency !== "high";
+    }
+
+    return urgency === urgencyFilter.toLowerCase();
   });
 
   return (
@@ -294,6 +301,11 @@ export default function ShowRequests() {
             </button>
           ))}
         </div>
+
+        {/* Map of requests */}
+        {!loading && filteredRequests.length > 0 && (
+          <RequestsMap requests={filteredRequests} />
+        )}
 
         {/* Loading */}
         {loading && (
@@ -454,6 +466,18 @@ export default function ShowRequests() {
                             .filter(Boolean)
                             .join(", ") || "Not provided"}
                         </p>
+
+                        {typeof request.latitude === "number" &&
+                          typeof request.longitude === "number" && (
+                            <a
+                              href={`https://www.google.com/maps/dir/?api=1&destination=${request.latitude},${request.longitude}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="mt-1 inline-block text-sm font-semibold text-blue-600 hover:underline"
+                            >
+                              Get directions
+                            </a>
+                          )}
                       </div>
                     </div>
 
@@ -515,6 +539,13 @@ export default function ShowRequests() {
                           </p>
                         </div>
                       )}
+
+                    <Link
+                      to={`/requests/${request._id}`}
+                      className="block rounded-xl border border-gray-200 px-5 py-3 text-center font-semibold text-gray-700 transition hover:bg-gray-50"
+                    >
+                      View details and map
+                    </Link>
 
                     {/* Accept button */}
                     {activeTab === "pending" && isDonor && (

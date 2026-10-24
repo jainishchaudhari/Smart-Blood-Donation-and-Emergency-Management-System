@@ -18,6 +18,8 @@ import EmergencyRequest from "./pages/EmergencyRequest";
 import ShowRequests from "./pages/ShowRequests";
 import FindBlood from "./pages/FindBlood";
 import DonationHistory from "./pages/DonationHistory";
+import DonorProfile from "./pages/DonorProfile";
+import RequestDetails from "./pages/RequestDetails";
 
 // Scroll to top whenever the route changes
 function ScrollToTop() {
@@ -60,6 +62,7 @@ function App() {
             <Route element={<ProtectedRoute allowedRoles={["donor"]} />}>
               <Route path="/donor-dashboard" element={<DonorDashboard />} />
               <Route path="/donation-history" element={<DonationHistory />} />
+              <Route path="/donor-profile" element={<DonorProfile />} />
             </Route>
 
             <Route element={<ProtectedRoute allowedRoles={["hospital"]} />}>
@@ -87,6 +90,8 @@ function App() {
               <Route path="/find-blood" element={<FindBlood />} />
 
               <Route path="/show-requests" element={<ShowRequests />} />
+
+              <Route path="/requests/:id" element={<RequestDetails />} />
             </Route>
           </Routes>
         </main>

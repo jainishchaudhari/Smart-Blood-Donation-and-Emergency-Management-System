@@ -16,6 +16,13 @@ const createBloodRequest = async (req, res) => {
       contactNumber,
       urgency,
       notes,
+      patientAge,
+      patientGender,
+      medicalCondition,
+      hospitalAddress,
+      attendantName,
+      alternateContact,
+      requiredBy,
     } = req.body;
 
     if (
@@ -44,6 +51,43 @@ const createBloodRequest = async (req, res) => {
       });
     }
 
+    // The hospital / emergency location is required and must be valid
+    const parsedLatitude = Number(latitude);
+    const parsedLongitude = Number(longitude);
+
+    if (
+      latitude === undefined ||
+      latitude === null ||
+      latitude === "" ||
+      longitude === undefined ||
+      longitude === null ||
+      longitude === "" ||
+      !Number.isFinite(parsedLatitude) ||
+      !Number.isFinite(parsedLongitude) ||
+      parsedLatitude < -90 ||
+      parsedLatitude > 90 ||
+      parsedLongitude < -180 ||
+      parsedLongitude > 180
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Please select the hospital location on the map",
+      });
+    }
+
+    let parsedRequiredBy;
+
+    if (requiredBy) {
+      parsedRequiredBy = new Date(requiredBy);
+
+      if (Number.isNaN(parsedRequiredBy.getTime())) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid required-by date and time",
+        });
+      }
+    }
+
     const bloodRequest = await BloodRequest.create({
       patientName,
       bloodGroup,
@@ -51,11 +95,18 @@ const createBloodRequest = async (req, res) => {
       hospitalName,
       city,
       area,
-      latitude,
-      longitude,
+      latitude: parsedLatitude,
+      longitude: parsedLongitude,
       contactNumber,
       urgency,
       notes,
+      patientAge: patientAge === '' || patientAge == null ? undefined : Number(patientAge),
+      patientGender,
+      medicalCondition,
+      hospitalAddress,
+      attendantName,
+      alternateContact,
+      requiredBy: parsedRequiredBy,
       requestedBy: req.user._id,
     });
 
