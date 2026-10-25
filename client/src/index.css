@@ -2,23 +2,45 @@
 
 /* ---------- Design tokens ---------- */
 @theme {
-  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Bricolage Grotesque", "Figtree", ui-sans-serif, system-ui,
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    sans-serif;
+  --font-display: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
     sans-serif;
 
-  --color-ink: #14202b;
-  --color-muted: #566473;
-  --color-line: #e1e5ea;
-  --color-paper: #f6f7f9;
+  --color-ink: #0f172a;
+  --color-muted: #5b6676;
+  --color-line: #e2e8f0;
+  --color-paper: #f8fafc;
 
   --color-blood: #c8102e;
   --color-blood-deep: #9d0b23;
-  --color-plasma: #fdecee;
+  --color-plasma: #fde8eb;
 
-  --color-ok: #0f766e;
-  --color-ok-soft: #e3f4f1;
-  --color-warn: #b45309;
-  --color-warn-soft: #fdf1e1;
+  --color-ok: #0a7c7a;
+  --color-ok-soft: #dcf3f1;
+  --color-warn: #9a5700;
+  --color-warn-soft: #fff0d1;
+  --color-signal: #ffb020;
+
+  /* Re-tinted neutrals and reds, so older pages that use plain
+     gray-* / red-* utility classes follow the new palette. */
+  --color-gray-50: #f3f6f9;
+  --color-gray-100: #e7edf2;
+  --color-gray-200: #d5dee6;
+  --color-gray-300: #bcc9d4;
+  --color-gray-400: #8d9fb0;
+  --color-gray-500: #66798c;
+  --color-gray-600: #51657a;
+  --color-gray-700: #3a4d61;
+  --color-gray-800: #1f3347;
+  --color-gray-900: #0f172a;
+
+  --color-red-50: #fde8eb;
+  --color-red-100: #fbd0d6;
+  --color-red-200: #f6a3ae;
+  --color-red-500: #e5334b;
+  --color-red-600: #c8102e;
+  --color-red-700: #9d0b23;
 }
 
 /* ---------- Base ---------- */
@@ -45,8 +67,28 @@
   h2,
   h3 {
     font-family: var(--font-display);
-    letter-spacing: -0.015em;
+    letter-spacing: -0.02em;
     text-wrap: balance;
+  }
+
+  /* Tailwind v4 leaves buttons with the default arrow cursor */
+  button:not(:disabled),
+  [role="button"],
+  summary {
+    cursor: pointer;
+  }
+
+  /* Pressed feedback for every button in the app */
+  button:not(:disabled):active,
+  a.btn:active {
+    transform: translateY(1px);
+  }
+
+  button,
+  a.btn {
+    transition-property: color, background-color, border-color, box-shadow,
+      transform;
+    transition-duration: 150ms;
   }
 
   :focus-visible {
@@ -73,13 +115,17 @@
     @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
-    @apply bg-blood text-white hover:bg-blood-deep;
+    @apply bg-blood text-white hover:bg-blood-deep active:bg-blood-deep;
   }
   .btn-secondary {
-    @apply border border-ink/20 bg-white text-ink hover:border-ink/40 hover:bg-paper;
+    @apply border border-ink/20 bg-white text-ink hover:border-ink/50 hover:bg-paper active:bg-paper;
   }
   .btn-light {
-    @apply bg-white text-ink hover:bg-plasma;
+    @apply bg-white text-ink hover:bg-plasma active:bg-plasma;
+  }
+  /* A button-styled NavLink for the page you are on turns dark */
+  .btn[aria-current="page"] {
+    @apply border-ink bg-ink text-white hover:bg-ink;
   }
   .btn-sm {
     @apply px-3.5 py-2;
@@ -107,4 +153,42 @@
   .chip[aria-checked="true"] {
     @apply border-blood bg-blood text-white;
   }
+}
+
+/* ---------- Distance-rings motif (hero graphic) ---------- */
+@keyframes ring-ping {
+  from {
+    transform: scale(0.15);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes dot-in {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.ring-draw,
+.dot-in {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation-fill-mode: both;
+}
+
+.ring-draw {
+  animation: ring-ping 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.dot-in {
+  animation: dot-in 0.4s ease-out;
 }

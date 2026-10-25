@@ -1,7 +1,14 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Menu, X, LogOut, Plus } from "lucide-react";
 import { Logo } from "./ui";
+
+const roleLabels = {
+  user: "Patient / family",
+  donor: "Donor",
+  hospital: "Hospital",
+  admin: "Admin",
+};
 
 function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -38,6 +45,10 @@ function Navbar() {
       : []),
   ];
 
+  const displayName = currentUser?.name || currentUser?.email || "Account";
+  const initial = displayName.trim().charAt(0).toUpperCase();
+  const roleLabel = roleLabels[currentUser?.role] || "";
+
   const handleLogout = () => {
     localStorage.removeItem("lifeflowToken");
     localStorage.removeItem("lifeflowUser");
@@ -49,27 +60,47 @@ function Navbar() {
 
   const closeMenu = () => setMenuOpen(false);
 
+  // Close the mobile menu with the Escape key
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [menuOpen]);
+
   const desktopLink = ({ isActive }) =>
-    `border-b-2 py-1 text-sm font-medium transition-colors ${
+    `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
       isActive
-        ? "border-blood text-ink"
-        : "border-transparent text-muted hover:text-ink"
+        ? "bg-ink text-white"
+        : "text-muted hover:bg-gray-100 hover:text-ink"
     }`;
 
   const mobileLink = ({ isActive }) =>
     `rounded-lg px-3 py-3 font-medium transition-colors ${
-      isActive ? "bg-plasma text-blood" : "text-ink hover:bg-paper"
+      isActive ? "bg-ink text-white" : "text-muted hover:bg-gray-100 hover:text-ink"
     }`;
 
+  // Login / Register buttons: the button of the page you are on turns dark
+  const authButton = (idleClass, size) => ({ isActive }) =>
+    `btn ${size} ${isActive ? "bg-ink text-white hover:bg-ink" : idleClass}`;
+
   return (
-    <nav className="sticky top-0 z-50 border-b border-line bg-white/95 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+    <nav
+      aria-label="Main"
+      className="sticky top-0 z-50 border-b border-line bg-white/90 backdrop-blur"
+    >
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link to="/" onClick={closeMenu} aria-label="LifeFlow home">
           <Logo />
         </Link>
 
         {/* Desktop navigation */}
-        <div className="hidden items-center gap-7 md:flex">
+        <div className="hidden items-center gap-1 md:flex">
           {navLinks.map((link) => (
             <NavLink
               key={link.name}
@@ -80,7 +111,9 @@ function Navbar() {
               {link.name}
             </NavLink>
           ))}
+        </div>
 
+        <div className="hidden items-center gap-3 md:flex">
           {currentUser ? (
             <>
               <Link to="/emergency-request" className="btn btn-primary btn-sm">
@@ -88,43 +121,97 @@ function Navbar() {
                 Emergency request
               </Link>
 
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-ink"
-              >
-                <LogOut size={16} />
-                Logout
-              </button>
+              <div className="flex items-center gap-2.5 border-l border-line pl-4">
+                <span
+                  aria-hidden="true"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink text-sm font-semibold text-white"
+                >
+                  {initial}
+                </span>
+
+                <div className="hidden leading-tight lg:block">
+                  <p className="max-w-32 truncate text-sm font-semibold text-ink">
+                    {displayName}
+                  </p>
+                  {roleLabel && (
+                    <p className="text-xs text-muted">{roleLabel}</p>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  aria-label="Logout"
+                  title="Logout"
+                  className="rounded-lg p-2 text-muted transition-colors hover:bg-paper hover:text-ink"
+                >
+                  <LogOut size={18} />
+                </button>
+              </div>
             </>
           ) : (
             <>
-              <NavLink to="/login" className={desktopLink}>
+              <NavLink
+                to="/login"
+                className={authButton("btn-secondary", "btn-sm")}
+              >
                 Login
               </NavLink>
 
-              <Link to="/register" className="btn btn-primary btn-sm">
+              <NavLink
+                to="/register"
+                className={authButton("btn-primary", "btn-sm")}
+              >
                 Register
-              </Link>
+              </NavLink>
             </>
           )}
         </div>
 
-        {/* Mobile menu button */}
-        <button
-          type="button"
-          onClick={() => setMenuOpen(!menuOpen)}
-          className="-mr-2 rounded-lg p-2 text-ink md:hidden"
-          aria-label={menuOpen ? "Close menu" : "Open menu"}
-          aria-expanded={menuOpen}
-        >
-          {menuOpen ? <X size={26} /> : <Menu size={26} />}
-        </button>
+        {/* Mobile: quick emergency button + menu button */}
+        <div className="flex items-center gap-2 md:hidden">
+          {currentUser && (
+            <Link
+              to="/emergency-request"
+              onClick={closeMenu}
+              className="btn btn-primary btn-sm"
+            >
+              <Plus size={16} />
+              Emergency
+            </Link>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="-mr-2 rounded-lg p-2 text-ink"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+          >
+            {menuOpen ? <X size={26} /> : <Menu size={26} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile navigation */}
       {menuOpen && (
         <div className="flex flex-col gap-1 border-t border-line bg-white px-4 py-4 md:hidden">
+          {currentUser && (
+            <div className="mb-2 flex items-center gap-3 rounded-lg bg-paper p-3">
+              <span
+                aria-hidden="true"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ink font-semibold text-white"
+              >
+                {initial}
+              </span>
+
+              <div className="min-w-0 leading-tight">
+                <p className="truncate font-semibold text-ink">{displayName}</p>
+                {roleLabel && <p className="text-sm text-muted">{roleLabel}</p>}
+              </div>
+            </div>
+          )}
+
           {navLinks.map((link) => (
             <NavLink
               key={link.name}
@@ -138,38 +225,31 @@ function Navbar() {
           ))}
 
           {currentUser ? (
-            <>
-              <Link
-                to="/emergency-request"
-                onClick={closeMenu}
-                className="btn btn-primary mt-2"
-              >
-                <Plus size={16} />
-                Emergency request
-              </Link>
-
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="btn btn-secondary mt-1"
-              >
-                <LogOut size={16} />
-                Logout
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="btn btn-secondary mt-3"
+            >
+              <LogOut size={16} />
+              Logout
+            </button>
           ) : (
             <>
-              <NavLink to="/login" onClick={closeMenu} className={mobileLink}>
+              <NavLink
+                to="/login"
+                onClick={closeMenu}
+                className={authButton("btn-secondary", "mt-2")}
+              >
                 Login
               </NavLink>
 
-              <Link
+              <NavLink
                 to="/register"
                 onClick={closeMenu}
-                className="btn btn-primary mt-2"
+                className={authButton("btn-primary", "mt-1")}
               >
                 Register
-              </Link>
+              </NavLink>
             </>
           )}
         </div>

@@ -1,35 +1,42 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import {
-  BloodTag,
-} from '../components/ui'
+import { HeartPulse, Hospital, Users } from 'lucide-react'
+import { BloodTag } from '../components/ui'
+import Rings from '../components/Rings'
 import { BLOOD_GROUPS, CAN_RECEIVE_FROM, formatGroup } from '../lib/blood'
 
 const steps = [
   {
-    title: 'Post a request',
-    text: 'Enter the blood group, units needed, hospital and a contact number.',
+    title: 'Post the request',
+    text: 'Add the patient details and pick the hospital on the map.',
   },
   {
-    title: 'Reach donors',
-    text: 'Donors, hospitals and blood banks can view open requests and find compatible donors.',
+    title: 'Nearby donors are found',
+    text: 'LifeFlow lists available donors with a compatible blood group, closest first.',
   },
   {
-    title: 'Donate and record',
-    text: 'Once blood is donated, it shows up in the donor\u2019s donation history.',
+    title: 'Donors reply',
+    text: 'Each donor accepts or declines. If nobody accepts, contact the next nearest donor.',
+  },
+  {
+    title: 'The donation is completed',
+    text: 'Mark the request as completed once the blood has been donated.',
   },
 ]
 
 const audiences = [
   {
+    icon: Users,
     title: 'Patients and families',
-    text: 'Search donors by blood group and city, and post an emergency request with the hospital and contact details.',
+    text: 'Post an emergency request with the hospital location and see which donors are close by.',
   },
   {
+    icon: HeartPulse,
     title: 'Donors',
-    text: 'Keep your donor profile ready, see open requests and review your past donations.',
+    text: 'Save your location and availability, and get requests from hospitals near you.',
   },
   {
+    icon: Hospital,
     title: 'Hospitals and blood banks',
     text: 'Track blood stock for every group and spot low levels early.',
   },
@@ -95,42 +102,71 @@ function Home() {
     <>
       {/* Hero */}
       <section className="border-b border-line bg-white">
-        <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-14 sm:px-6 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:py-20">
+        <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-14 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10 lg:py-20">
           <div>
-            <h1 className="text-4xl font-extrabold leading-[1.05] sm:text-5xl lg:text-6xl">
-              Find the right blood group, fast.
+            <h1 className="text-4xl font-bold leading-[1.1] sm:text-5xl">
+              Need blood urgently? We reach the nearest donors first.
             </h1>
 
             <p className="mt-6 max-w-xl text-lg leading-7 text-muted">
-              LifeFlow connects patients, donors and hospitals. Check which
-              blood groups are compatible, search for donors in your city and
-              post an emergency request.
+              Post a request with the hospital&apos;s location. LifeFlow finds
+              compatible, available donors around it and lets you contact
+              them one by one, nearest first.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
               <button
                 type="button"
-                onClick={() => handleFindBlood()}
-                className="btn btn-primary px-6"
+                onClick={() => handleFindBlood('/emergency-request')}
+                className="btn btn-primary px-7 py-3.5 text-base"
               >
-                Find blood
+                Request blood now
               </button>
 
               <button
                 type="button"
                 onClick={handleBecomeDonor}
-                className="btn btn-secondary px-6"
+                className="btn btn-secondary px-7 py-3.5 text-base"
               >
                 Become a donor
               </button>
             </div>
+
+            <p className="mt-5 text-sm text-muted">
+              Just looking for donors?{' '}
+              <button
+                type="button"
+                onClick={() => handleFindBlood()}
+                className="font-semibold text-ink underline underline-offset-4 hover:text-blood"
+              >
+                Search by blood group
+              </button>
+            </p>
           </div>
 
-          {/* Compatibility board */}
-          <div className="card p-6 sm:p-8">
-            <h2 className="text-xl font-bold">Who can donate to you?</h2>
+          <Rings className="mx-auto w-full max-w-md" />
+        </div>
+      </section>
+
+      {/* Compatibility */}
+      <section className="py-16">
+        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-[0.85fr_1fr] lg:gap-16">
+          <div>
+            <h2 className="text-3xl font-bold sm:text-4xl">
+              Check who can donate to your blood group
+            </h2>
+
+            <p className="mt-4 max-w-md text-muted">
+              Not every donor is a match. Pick the patient&apos;s group to see
+              which red blood cell types are safe, then search for donors in
+              your city.
+            </p>
+          </div>
+
+          <div className="card p-6 shadow-sm sm:p-8">
+            <h3 className="text-xl font-bold">Patient&apos;s blood group</h3>
             <p className="mt-1 text-sm text-muted">
-              Pick the patient&apos;s blood group.
+              Choose one to see which groups can donate.
             </p>
 
             <div
@@ -167,7 +203,7 @@ function Home() {
             <button
               type="button"
               onClick={() => handleFindBlood(compatibleTarget)}
-              className="btn btn-primary mt-6 w-full"
+              className="btn btn-primary mt-6 w-full py-3.5"
             >
               Find donors for {formatGroup(group)}
             </button>
@@ -181,17 +217,27 @@ function Home() {
       </section>
 
       {/* How it works */}
-      <section className="py-16">
+      <section className="border-y border-line bg-white py-16">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <h2 className="text-3xl font-bold">How a request moves through LifeFlow</h2>
+          <h2 className="text-3xl font-bold sm:text-4xl">
+            How a request moves through LifeFlow
+          </h2>
 
-          <ol className="mt-10 grid gap-8 md:grid-cols-3">
+          <ol className="mt-12 grid gap-10 md:grid-cols-4 md:gap-6">
             {steps.map((step, index) => (
-              <li key={step.title} className="border-t-2 border-ink pt-4">
-                <span className="font-display text-sm font-bold text-blood">
-                  Step {index + 1}
+              <li key={step.title} className="relative">
+                {index < steps.length - 1 && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute left-12 right-0 top-[18px] hidden h-px bg-line md:block"
+                  />
+                )}
+
+                <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-ink font-display text-sm font-bold text-white">
+                  {index + 1}
                 </span>
-                <h3 className="mt-1 text-xl font-semibold">{step.title}</h3>
+
+                <h3 className="mt-4 text-lg font-bold">{step.title}</h3>
                 <p className="mt-2 text-muted">{step.text}</p>
               </li>
             ))}
@@ -200,15 +246,21 @@ function Home() {
       </section>
 
       {/* Audiences */}
-      <section className="border-y border-line bg-white py-16">
+      <section className="py-16">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <h2 className="text-3xl font-bold">Built for everyone in the chain</h2>
+          <h2 className="text-3xl font-bold sm:text-4xl">
+            Built for everyone in the chain
+          </h2>
 
-          <dl className="mt-10 grid gap-8 md:grid-cols-3">
-            {audiences.map((item) => (
-              <div key={item.title} className="border-l-4 border-blood pl-5">
-                <dt className="text-lg font-semibold">{item.title}</dt>
-                <dd className="mt-2 text-muted">{item.text}</dd>
+          <dl className="mt-10 grid gap-10 md:grid-cols-3">
+            {audiences.map(({ icon: Icon, title, text }) => (
+              <div key={title}>
+                <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-plasma text-blood">
+                  <Icon size={22} />
+                </span>
+
+                <dt className="mt-4 text-lg font-bold">{title}</dt>
+                <dd className="mt-2 text-muted">{text}</dd>
               </div>
             ))}
           </dl>
@@ -216,11 +268,13 @@ function Home() {
       </section>
 
       {/* Closing call to action */}
-      <section className="bg-blood py-16 text-white">
-        <div className="mx-auto flex max-w-6xl px-4 sm:px-6 flex-col items-start justify-between gap-6 md:flex-row md:items-center">
+      <section className="px-4 pb-16 sm:px-6">
+        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 rounded-2xl bg-ink px-6 py-10 text-white sm:px-10 md:flex-row md:items-center">
           <div>
-            <h2 className="text-3xl font-bold">Be the match someone is looking for.</h2>
-            <p className="mt-2 max-w-xl text-white/85">
+            <h2 className="text-3xl font-bold">
+              Be the match someone is looking for.
+            </h2>
+            <p className="mt-2 max-w-xl text-white/80">
               Create an account as a donor, a patient or a hospital and get
               started in a minute.
             </p>
