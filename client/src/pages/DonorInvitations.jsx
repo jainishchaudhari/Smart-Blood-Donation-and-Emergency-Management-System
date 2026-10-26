@@ -1,16 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CheckCircle, Clock, Hospital, MapPin, Phone } from 'lucide-react'
-import { PageContainer, PageHeader } from '../components/ui'
+import { PageContainer, PageHeader, Pill } from '../components/ui'
 
 const API_URL = 'http://localhost:5000/api/invitations'
 
-const URGENCY_COLORS = {
-  critical: 'bg-red-100 text-red-700',
-  high: 'bg-orange-100 text-orange-700',
-  medium: 'bg-green-100 text-green-700',
-  low: 'bg-green-100 text-green-700',
-}
+const URGENCY_TONE = { critical: 'critical', high: 'warn', medium: 'ok', low: 'ok' }
+
+const getUrgencyTone = (urgency) =>
+  URGENCY_TONE[(urgency || 'medium').toLowerCase()] || 'ok'
 
 const timeLeft = (expiresAt) => {
   const ms = new Date(expiresAt).getTime() - Date.now()
@@ -147,14 +145,14 @@ function DonorInvitations() {
       />
 
       {success && (
-        <p role="status" className="mt-6 flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+        <p role="status" className="mt-6 flex items-center gap-2 rounded-lg border border-ok/30 bg-ok-soft p-3 text-sm text-ok">
           <CheckCircle size={18} />
           {success}
         </p>
       )}
 
       {error && (
-        <p role="alert" className="mt-6 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+        <p role="alert" className="mt-6 rounded-lg border border-blood/30 bg-plasma p-3 text-sm text-blood-deep">
           {error}
         </p>
       )}
@@ -170,7 +168,7 @@ function DonorInvitations() {
             </h2>
 
             {pending.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-gray-300 bg-white p-6 text-center text-gray-600">
+              <div className="rounded-lg border border-dashed border-line bg-white p-6 text-center text-muted">
                 No requests need your reply right now.
               </div>
             ) : (
@@ -183,7 +181,7 @@ function DonorInvitations() {
                     <div key={inv._id} className="card space-y-4 p-5">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex items-center gap-3">
-                          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 text-lg font-bold text-red-600">
+                          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-plasma text-lg font-bold text-blood">
                             {r.bloodGroup}
                           </span>
                           <div>
@@ -194,29 +192,27 @@ function DonorInvitations() {
                           </div>
                         </div>
 
-                        <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${URGENCY_COLORS[urgency]}`}>
-                          {urgency}
-                        </span>
+                        <Pill tone={getUrgencyTone(urgency)}>{urgency}</Pill>
                       </div>
 
-                      <div className="space-y-1 text-sm text-gray-700">
+                      <div className="space-y-1 text-sm text-ink">
                         <p className="flex items-center gap-2">
-                          <Hospital size={16} className="text-gray-400" />
+                          <Hospital size={16} className="text-muted" />
                           {r.hospitalName}
                         </p>
                         <p className="flex items-center gap-2">
-                          <MapPin size={16} className="text-gray-400" />
+                          <MapPin size={16} className="text-muted" />
                           {[r.area, r.city].filter(Boolean).join(', ')}
                           {inv.distanceKm != null && ` · about ${inv.distanceKm} km from you`}
                         </p>
                         <p className="flex items-center gap-2">
-                          <Clock size={16} className="text-gray-400" />
+                          <Clock size={16} className="text-muted" />
                           Reply: {timeLeft(inv.expiresAt)}
                         </p>
                       </div>
 
                       {r.medicalCondition && (
-                        <p className="text-sm text-gray-600">Reason: {r.medicalCondition}</p>
+                        <p className="text-sm text-muted">Reason: {r.medicalCondition}</p>
                       )}
 
                       <div className="flex flex-wrap gap-3">
@@ -261,25 +257,25 @@ function DonorInvitations() {
                   const r = inv.request
 
                   return (
-                    <div key={inv._id} className="card space-y-2 border-green-200 p-5">
+                    <div key={inv._id} className="card space-y-2 border-ok/25 p-5">
                       <p className="font-bold">
                         {r.bloodGroup} · {r.units} unit{r.units === 1 ? '' : 's'} for {r.patientName}
                       </p>
-                      <p className="text-sm text-gray-700">
+                      <p className="text-sm text-ink">
                         {r.hospitalName}, {[r.area, r.city].filter(Boolean).join(', ')}
                       </p>
 
                       {r.contactNumber && (
                         <p className="flex items-center gap-2 text-sm">
-                          <Phone size={16} className="text-gray-400" />
+                          <Phone size={16} className="text-muted" />
                           {r.attendantName ? `${r.attendantName}: ` : ''}
-                          <a href={`tel:${r.contactNumber}`} className="font-semibold text-blue-600">
+                          <a href={`tel:${r.contactNumber}`} className="font-semibold text-blood hover:text-blood-deep">
                             {r.contactNumber}
                           </a>
                         </p>
                       )}
 
-                      <p className="text-sm font-semibold capitalize text-blue-700">
+                      <p className="text-sm font-semibold capitalize text-ok">
                         Status: {r.status.replace('_', ' ')}
                       </p>
 

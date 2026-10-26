@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom'
-import { UserRound, ClipboardList, Search, HeartPulse } from 'lucide-react'
+import { ClipboardList, Search, HeartPulse } from 'lucide-react'
 import { ActionList, DashboardShell, SectionTitle } from '../components/ui'
 
 const actions = [
@@ -27,16 +27,9 @@ const actions = [
     title: 'Blood information',
     text: 'Explore blood groups and donor profiles.',
   },
-  {
-    to: '/donor-profile',
-    icon: UserRound,
-    title: 'My profile',
-    text: 'Manage your donor profile and personal details.',
-  },
 ]
 
 function DonorDashboard() {
-  // Get demo login information
   const savedUser = localStorage.getItem('lifeflowUser')
 
   let currentUser
@@ -47,12 +40,10 @@ function DonorDashboard() {
     currentUser = null
   }
 
-  // Redirect if not logged in
   if (!currentUser) {
     return <Navigate to="/login" replace />
   }
 
-  // Redirect to the correct dashboard based on role
   if (currentUser.role !== 'donor') {
     const dashboardRoutes = {
       user: '/user-dashboard',

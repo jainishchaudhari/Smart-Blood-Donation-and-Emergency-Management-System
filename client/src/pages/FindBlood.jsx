@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
@@ -126,7 +125,7 @@ function FindBlood() {
   return (
     <PageContainer>
       <PageHeader
-        title="Find Blood Donors"
+        title="Find blood donors"
         text="Search registered donors by blood group, city and area."
       />
 
@@ -222,7 +221,7 @@ function FindBlood() {
             className="btn btn-primary"
           >
             <Search size={16} />
-            {loading ? 'Searching...' : 'Find Donors'}
+            {loading ? 'Searching...' : 'Find donors'}
           </button>
 
           <button
@@ -232,7 +231,7 @@ function FindBlood() {
             className="btn btn-secondary"
           >
             <X size={16} />
-            Clear Filters
+            Clear filters
           </button>
 
           <button
@@ -254,7 +253,7 @@ function FindBlood() {
       {error && (
         <div
           role="alert"
-          className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+          className="mt-6 rounded-xl border border-blood/30 bg-plasma p-4 text-sm text-blood-deep"
         >
           {error}
         </div>
@@ -283,7 +282,7 @@ function FindBlood() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-semibold">
-                    {donor.name || 'Registered Donor'}
+                    {donor.name || 'Registered donor'}
                   </h2>
 
                   <p className="mt-2 flex items-center gap-2 text-sm text-muted">
@@ -297,7 +296,7 @@ function FindBlood() {
                   </p>
                 </div>
 
-                <span className="shrink-0 rounded-lg bg-red-50 px-3 py-2 font-bold text-red-700">
+                <span className="shrink-0 rounded-lg bg-plasma px-3 py-2 font-bold text-blood">
                   {donor.bloodGroup || 'Not provided'}
                 </span>
               </div>
@@ -308,7 +307,7 @@ function FindBlood() {
                   className="btn btn-primary btn-sm mt-5"
                 >
                   <Phone size={16} />
-                  Contact Donor
+                  Contact donor
                 </a>
               ) : (
                 <p className="mt-5 text-sm text-muted">

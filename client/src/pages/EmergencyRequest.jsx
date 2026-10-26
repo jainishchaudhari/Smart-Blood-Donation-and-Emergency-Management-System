@@ -1,6 +1,14 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CheckCircle, Hospital, Droplet, MapPin } from 'lucide-react'
+import {
+  CheckCircle,
+  Clock,
+  Droplet,
+  FileText,
+  Hospital,
+  MapPin,
+  User,
+} from 'lucide-react'
 import {
   BloodTag,
   PageContainer,
@@ -15,9 +23,21 @@ const API_URL = 'http://localhost:5000/api/requests'
 const URGENCY_TO_API = { Critical: 'critical', High: 'high', Normal: 'medium' }
 
 const urgencyLevels = [
-  { value: 'Critical', hint: 'Immediate need' },
-  { value: 'High', hint: 'Same-day need' },
-  { value: 'Normal', hint: 'Planned need' },
+  {
+    value: 'Critical',
+    hint: 'Immediate need',
+    active: 'peer-checked:border-blood peer-checked:bg-plasma',
+  },
+  {
+    value: 'High',
+    hint: 'Same-day need',
+    active: 'peer-checked:border-signal peer-checked:bg-warn-soft',
+  },
+  {
+    value: 'Normal',
+    hint: 'Planned need',
+    active: 'peer-checked:border-ok peer-checked:bg-ok-soft',
+  },
 ]
 
 const emptyForm = {
@@ -40,6 +60,18 @@ const emptyForm = {
   consent: false,
   latitude: null,
   longitude: null,
+}
+
+// Small heading used above each group of fields.
+function SectionLegend({ icon: Icon, children }) {
+  return (
+    <legend className="mb-4 flex items-center gap-2 text-lg font-semibold">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-plasma text-blood">
+        <Icon size={17} />
+      </span>
+      {children}
+    </legend>
+  )
 }
 
 function EmergencyRequest() {
@@ -140,7 +172,9 @@ function EmergencyRequest() {
     return (
       <PageContainer narrow>
         <div className="card p-6 sm:p-8">
-          <CheckCircle className="text-ok" size={40} />
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-ok-soft text-ok">
+            <CheckCircle size={26} />
+          </span>
 
           <h1 className="mt-4 text-3xl font-bold">
             Request submitted
@@ -246,9 +280,7 @@ function EmergencyRequest() {
       >
         {/* Patient details */}
         <fieldset className="space-y-5">
-          <legend className="mb-4 text-lg font-semibold">
-            Patient
-          </legend>
+          <SectionLegend icon={User}>Patient</SectionLegend>
 
           <div>
             <label htmlFor="patientName" className="label">
@@ -392,9 +424,7 @@ function EmergencyRequest() {
 
         {/* Hospital details and map */}
         <fieldset className="space-y-5">
-          <legend className="mb-4 text-lg font-semibold">
-            Hospital and contact
-          </legend>
+          <SectionLegend icon={Hospital}>Hospital and contact</SectionLegend>
 
           <div>
             <label htmlFor="hospital" className="label">
@@ -517,7 +547,7 @@ function EmergencyRequest() {
             <div>
               <h2 className="flex items-center gap-2 text-lg font-semibold">
                 <MapPin size={20} className="text-blood" />
-                Select Hospital Location
+                Select hospital location
               </h2>
 
               <p className="mt-1 text-sm text-muted">
@@ -536,9 +566,7 @@ function EmergencyRequest() {
 
         {/* Urgency */}
         <fieldset>
-          <legend className="mb-4 text-lg font-semibold">
-            Urgency
-          </legend>
+          <SectionLegend icon={Clock}>Urgency</SectionLegend>
 
           <div className="grid gap-3 sm:grid-cols-3">
             {urgencyLevels.map((level) => (
@@ -552,7 +580,9 @@ function EmergencyRequest() {
                   className="peer sr-only"
                 />
 
-                <span className="block h-full rounded-lg border border-ink/20 bg-white p-3 transition-colors hover:border-ink/40 peer-checked:border-blood peer-checked:bg-plasma peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-blood">
+                <span
+                  className={`block h-full rounded-lg border border-ink/20 bg-white p-3 transition-colors hover:border-ink/40 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-blood ${level.active}`}
+                >
                   <span className="block font-semibold">
                     {level.value}
                   </span>
@@ -569,9 +599,7 @@ function EmergencyRequest() {
         <hr className="border-line" />
 
         <fieldset className="space-y-5">
-          <legend className="mb-4 text-lg font-semibold">
-            Additional information
-          </legend>
+          <SectionLegend icon={FileText}>Additional information</SectionLegend>
 
           <div>
             <label htmlFor="notes" className="label">
@@ -609,7 +637,7 @@ function EmergencyRequest() {
         {submitError && (
           <p
             role="alert"
-            className="rounded-lg bg-red-50 p-3 text-sm text-red-700"
+            className="rounded-lg border border-blood/30 bg-plasma p-3 text-sm text-blood-deep"
           >
             {submitError}
           </p>
@@ -618,7 +646,7 @@ function EmergencyRequest() {
         <button
           type="submit"
           disabled={submitting}
-          className="btn btn-primary w-full py-3.5"
+          className="btn btn-primary w-full py-3.5 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {submitting ? 'Submitting...' : 'Submit emergency request'}
         </button>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Eye, EyeOff, Lock, Mail, User, UserPlus } from 'lucide-react'
 import { AuthShell, FormError, RolePicker } from '../components/AuthShell'
 
 const API_URL = 'http://localhost:5000/api/auth'
@@ -19,6 +20,7 @@ function Register() {
 
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -127,15 +129,21 @@ function Register() {
             Full name
           </label>
 
-          <input
-            id="name"
-            name="name"
-            type="text"
-            placeholder="Enter your full name"
-            autoComplete="name"
-            required
-            className="field"
-          />
+          <div className="relative">
+            <User
+              size={18}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+            />
+            <input
+              id="name"
+              name="name"
+              type="text"
+              placeholder="Enter your full name"
+              autoComplete="name"
+              required
+              className="field pl-10"
+            />
+          </div>
         </div>
 
         {/* Email */}
@@ -144,15 +152,21 @@ function Register() {
             Email address
           </label>
 
-          <input
-            id="email"
-            name="email"
-            type="email"
-            placeholder="you@example.com"
-            autoComplete="email"
-            required
-            className="field"
-          />
+          <div className="relative">
+            <Mail
+              size={18}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+            />
+            <input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="you@example.com"
+              autoComplete="email"
+              required
+              className="field pl-10"
+            />
+          </div>
         </div>
 
         {/* Password */}
@@ -161,16 +175,30 @@ function Register() {
             Password
           </label>
 
-          <input
-            id="password"
-            name="password"
-            type="password"
-            placeholder="Create a password"
-            autoComplete="new-password"
-            minLength={6}
-            required
-            className="field"
-          />
+          <div className="relative">
+            <Lock
+              size={18}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+            />
+            <input
+              id="password"
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Create a password"
+              autoComplete="new-password"
+              minLength={6}
+              required
+              className="field pl-10 pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted transition-colors hover:text-ink"
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
 
           <p className="hint">
             Use at least 6 characters.
@@ -192,6 +220,7 @@ function Register() {
           disabled={loading}
           className="btn btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60"
         >
+          <UserPlus size={18} />
           {loading ? 'Creating account...' : 'Create account'}
         </button>
       </form>

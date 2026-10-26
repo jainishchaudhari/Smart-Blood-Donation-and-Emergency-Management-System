@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback } from 'react'
 import { Navigate } from 'react-router-dom'
 import {
@@ -26,6 +25,19 @@ import { formatGroup } from '../lib/blood'
 const API_URL = 'http://localhost:5000/api/hospitals'
 const LOW_STOCK_LIMIT = 10
 const STOCK_SCALE = 40
+
+// Tones for the shared Pill component, kept consistent with the rest of the app
+const STATUS_TONE = {
+  pending: 'warn',
+  accepted: 'ok',
+  in_progress: 'ok',
+  completed: 'ok',
+  cancelled: 'neutral',
+  scheduled: 'warn',
+}
+
+const getStatusTone = (status) =>
+  STATUS_TONE[(status || '').toLowerCase()] || 'neutral'
 
 const actions = [
   {
@@ -370,7 +382,7 @@ function HospitalDashboard() {
       )}
 
       {statsError && (
-        <p className="mb-3 text-sm text-blood" role="alert">
+        <p className="mb-3 text-sm text-blood-deep" role="alert">
           {statsError}
         </p>
       )}
@@ -388,7 +400,7 @@ function HospitalDashboard() {
         )}
 
         {requestsError && (
-          <p className="mt-4 text-sm text-blood" role="alert">
+          <p className="mt-4 text-sm text-blood-deep" role="alert">
             {requestsError}
           </p>
         )}
@@ -445,7 +457,9 @@ function HospitalDashboard() {
 
                   <p>
                     <span className="text-muted">Status: </span>
-                    <Pill>{request.status || 'accepted'}</Pill>
+                    <Pill tone={getStatusTone(request.status || 'accepted')}>
+                      {request.status || 'accepted'}
+                    </Pill>
                   </p>
                 </div>
 
@@ -483,7 +497,7 @@ function HospitalDashboard() {
         )}
 
         {donationsError && (
-          <p className="mt-4 text-sm text-blood" role="alert">
+          <p className="mt-4 text-sm text-blood-deep" role="alert">
             {donationsError}
           </p>
         )}
@@ -558,14 +572,14 @@ function HospitalDashboard() {
 
                     <p>
                       <span className="text-muted">Request status: </span>
-                      <Pill>
+                      <Pill tone={getStatusTone(donation.bloodRequest?.status)}>
                         {donation.bloodRequest?.status || 'Not linked'}
                       </Pill>
                     </p>
 
                     <p>
                       <span className="text-muted">Donation status: </span>
-                      <Pill>{status}</Pill>
+                      <Pill tone={getStatusTone(status)}>{status}</Pill>
                     </p>
                   </div>
 
@@ -583,12 +597,12 @@ function HospitalDashboard() {
                           handleDonationStatus(donation, 'completed')
                         }
                         disabled={updatingDonationId === donation._id}
-                        className="btn btn-primary inline-flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="btn btn-primary disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         <CheckCircle size={18} />
                         {updatingDonationId === donation._id
                           ? 'Updating...'
-                          : 'Mark Completed'}
+                          : 'Mark completed'}
                       </button>
 
                       <button
@@ -597,10 +611,10 @@ function HospitalDashboard() {
                           handleDonationStatus(donation, 'cancelled')
                         }
                         disabled={updatingDonationId === donation._id}
-                        className="inline-flex items-center gap-2 rounded-lg border border-blood/30 px-4 py-2 font-medium text-blood hover:bg-plasma disabled:cursor-not-allowed disabled:opacity-60"
+                        className="btn border border-blood/30 bg-white text-blood hover:bg-plasma disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         <XCircle size={18} />
-                        Cancel Donation
+                        Cancel donation
                       </button>
                     </div>
                   )}
@@ -627,7 +641,7 @@ function HospitalDashboard() {
             Promise.all([fetchDonations(), fetchDashboardStats()])
           }
           disabled={donationsLoading}
-          className="btn mt-5 inline-flex items-center gap-2 disabled:opacity-60"
+          className="btn btn-secondary mt-5 disabled:opacity-60"
         >
           <RefreshCw size={17} />
           Refresh donations
@@ -673,7 +687,7 @@ function HospitalDashboard() {
                       {item.units} units
                     </span>
 
-                    {isLow && <Pill>Low stock</Pill>}
+                    {isLow && <Pill tone="critical">Low stock</Pill>}
                   </div>
 
                   <div

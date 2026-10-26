@@ -1,6 +1,6 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { Menu, X, LogOut, Plus } from "lucide-react";
+import { Menu, X, LogOut, Plus, UserRound } from "lucide-react";
 import { Logo } from "./ui";
 
 const roleLabels = {
@@ -30,8 +30,19 @@ function Navbar() {
     admin: "/admin-dashboard",
   };
 
+  const profileRoutes = {
+    user: "/user-profile",
+    donor: "/donor-profile",
+    hospital: "/hospital-profile",
+    admin: "/admin-profile",
+  };
+
   const dashboardPath = currentUser
     ? dashboardRoutes[currentUser.role] || "/login"
+    : "/login";
+
+  const profilePath = currentUser
+    ? profileRoutes[currentUser.role] || dashboardPath
     : "/login";
 
   const navLinks = [
@@ -45,7 +56,9 @@ function Navbar() {
       : []),
   ];
 
-  const displayName = currentUser?.name || currentUser?.email || "Account";
+  const displayName =
+    currentUser?.name || currentUser?.email || "Account";
+
   const initial = displayName.trim().charAt(0).toUpperCase();
   const roleLabel = roleLabels[currentUser?.role] || "";
 
@@ -54,18 +67,18 @@ function Navbar() {
     localStorage.removeItem("lifeflowUser");
 
     setMenuOpen(false);
-
     navigate("/login", { replace: true });
   };
 
   const closeMenu = () => setMenuOpen(false);
 
-  // Close the mobile menu with the Escape key
   useEffect(() => {
     if (!menuOpen) return undefined;
 
     const onKeyDown = (event) => {
-      if (event.key === "Escape") setMenuOpen(false);
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+      }
     };
 
     window.addEventListener("keydown", onKeyDown);
@@ -82,12 +95,17 @@ function Navbar() {
 
   const mobileLink = ({ isActive }) =>
     `rounded-lg px-3 py-3 font-medium transition-colors ${
-      isActive ? "bg-ink text-white" : "text-muted hover:bg-gray-100 hover:text-ink"
+      isActive
+        ? "bg-ink text-white"
+        : "text-muted hover:bg-gray-100 hover:text-ink"
     }`;
 
-  // Login / Register buttons: the button of the page you are on turns dark
   const authButton = (idleClass, size) => ({ isActive }) =>
-    `btn ${size} ${isActive ? "bg-ink text-white hover:bg-ink" : idleClass}`;
+    `btn ${size} ${
+      isActive
+        ? "bg-ink text-white hover:bg-ink"
+        : idleClass
+    }`;
 
   return (
     <nav
@@ -95,7 +113,12 @@ function Navbar() {
       className="sticky top-0 z-50 border-b border-line bg-white/90 backdrop-blur"
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-        <Link to="/" onClick={closeMenu} aria-label="LifeFlow home">
+        {/* Logo */}
+        <Link
+          to="/"
+          onClick={closeMenu}
+          aria-label="LifeFlow home"
+        >
           <Logo />
         </Link>
 
@@ -113,31 +136,53 @@ function Navbar() {
           ))}
         </div>
 
+        {/* Desktop account actions */}
         <div className="hidden items-center gap-3 md:flex">
           {currentUser ? (
             <>
-              <Link to="/emergency-request" className="btn btn-primary btn-sm">
+              <Link
+                to="/emergency-request"
+                className="btn btn-primary btn-sm"
+              >
                 <Plus size={16} />
                 Emergency request
               </Link>
 
               <div className="flex items-center gap-2.5 border-l border-line pl-4">
-                <span
-                  aria-hidden="true"
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink text-sm font-semibold text-white"
+                {/* Profile avatar, name and icon */}
+                <Link
+                  to={profilePath}
+                  onClick={closeMenu}
+                  className="flex items-center gap-2.5 rounded-lg transition-opacity hover:opacity-80"
+                  aria-label="Open My Profile"
+                  title="My Profile"
                 >
-                  {initial}
-                </span>
+                  <span
+                    aria-hidden="true"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink text-sm font-semibold text-white"
+                  >
+                    {initial}
+                  </span>
 
-                <div className="hidden leading-tight lg:block">
-                  <p className="max-w-32 truncate text-sm font-semibold text-ink">
-                    {displayName}
-                  </p>
-                  {roleLabel && (
-                    <p className="text-xs text-muted">{roleLabel}</p>
-                  )}
-                </div>
+                  <div className="hidden leading-tight lg:block">
+                    <p className="max-w-32 truncate text-sm font-semibold text-ink">
+                      {displayName}
+                    </p>
 
+                    {roleLabel && (
+                      <p className="text-xs text-muted">
+                        {roleLabel}
+                      </p>
+                    )}
+                  </div>
+
+                  <UserRound
+                    size={18}
+                    className="text-muted"
+                  />
+                </Link>
+
+                {/* Logout */}
                 <button
                   type="button"
                   onClick={handleLogout}
@@ -168,7 +213,7 @@ function Navbar() {
           )}
         </div>
 
-        {/* Mobile: quick emergency button + menu button */}
+        {/* Mobile emergency button and menu */}
         <div className="flex items-center gap-2 md:hidden">
           {currentUser && (
             <Link
@@ -196,6 +241,7 @@ function Navbar() {
       {/* Mobile navigation */}
       {menuOpen && (
         <div className="flex flex-col gap-1 border-t border-line bg-white px-4 py-4 md:hidden">
+          {/* Mobile account information */}
           {currentUser && (
             <div className="mb-2 flex items-center gap-3 rounded-lg bg-paper p-3">
               <span
@@ -206,12 +252,20 @@ function Navbar() {
               </span>
 
               <div className="min-w-0 leading-tight">
-                <p className="truncate font-semibold text-ink">{displayName}</p>
-                {roleLabel && <p className="text-sm text-muted">{roleLabel}</p>}
+                <p className="truncate font-semibold text-ink">
+                  {displayName}
+                </p>
+
+                {roleLabel && (
+                  <p className="text-sm text-muted">
+                    {roleLabel}
+                  </p>
+                )}
               </div>
             </div>
           )}
 
+          {/* Main mobile links */}
           {navLinks.map((link) => (
             <NavLink
               key={link.name}
@@ -224,6 +278,21 @@ function Navbar() {
             </NavLink>
           ))}
 
+          {/* Profile link for every logged-in role */}
+          {currentUser && (
+            <NavLink
+              to={profilePath}
+              onClick={closeMenu}
+              className={mobileLink}
+            >
+              <span className="flex items-center gap-2">
+                <UserRound size={18} />
+                My Profile
+              </span>
+            </NavLink>
+          )}
+
+          {/* Logout or authentication */}
           {currentUser ? (
             <button
               type="button"

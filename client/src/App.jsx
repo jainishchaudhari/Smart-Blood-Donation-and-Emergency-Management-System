@@ -19,6 +19,9 @@ import ShowRequests from "./pages/ShowRequests";
 import FindBlood from "./pages/FindBlood";
 import DonationHistory from "./pages/DonationHistory";
 import DonorProfile from "./pages/DonorProfile";
+import UserProfile from "./pages/UserProfile";
+import HospitalProfile from "./pages/HospitalProfile";
+import AdminProfile from "./pages/AdminProfile";
 import RequestDetails from "./pages/RequestDetails";
 import DonorInvitations from "./pages/DonorInvitations";
 
@@ -58,6 +61,7 @@ function App() {
             {/* Protected Routes */}
             <Route element={<ProtectedRoute allowedRoles={["user"]} />}>
               <Route path="/user-dashboard" element={<UserDashboard />} />
+              <Route path="/user-profile" element={<UserProfile />} />
             </Route>
 
             <Route element={<ProtectedRoute allowedRoles={["donor"]} />}>
@@ -72,12 +76,14 @@ function App() {
                 path="/hospital-dashboard"
                 element={<HospitalDashboard />}
               />
+              <Route path="/hospital-profile" element={<HospitalProfile />} />
             </Route>
 
             <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
               <Route path="/admin-dashboard" element={<AdminDashboard />} />
-            </Route>
 
+              <Route path="/admin-profile" element={<AdminProfile />} />
+            </Route>
 
             {/* Pages accessible to any logged-in role */}
             <Route

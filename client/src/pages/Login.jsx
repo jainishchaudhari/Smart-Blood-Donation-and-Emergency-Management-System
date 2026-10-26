@@ -1,26 +1,16 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { LogIn } from 'lucide-react'
-import { AuthShell, FormError, RolePicker } from '../components/AuthShell'
+import { Eye, EyeOff, Lock, LogIn, Mail } from 'lucide-react'
+import { AuthShell, FormError } from '../components/AuthShell'
 
 const API_URL = 'http://localhost:5000/api/auth'
-
-const roles = [
-  { value: 'user', label: 'User', hint: 'Find blood and post requests' },
-  { value: 'donor', label: 'Donor', hint: 'Respond to requests' },
-  {
-    value: 'hospital',
-    label: 'Hospital / Blood bank',
-    hint: 'Manage stock and requests',
-  },
-  { value: 'admin', label: 'Admin', hint: 'Oversee the platform' },
-]
 
 function Login() {
   const navigate = useNavigate()
 
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -30,9 +20,8 @@ function Login() {
 
     const email = formData.get('email')?.toString().trim()
     const password = formData.get('password')?.toString()
-    const role = formData.get('role')?.toString()
 
-    if (!email || !password || !role) {
+    if (!email || !password) {
       setError('Please fill in all fields.')
       return
     }
@@ -55,14 +44,6 @@ function Login() {
 
       if (!response.ok || !data.success) {
         setError(data.message || 'Login failed. Please try again.')
-        return
-      }
-
-      // Verify selected role
-      if (data.user.role !== role) {
-        setError(
-          `This account is registered as ${data.user.role}. Please select the correct role.`
-        )
         return
       }
 
@@ -102,25 +83,28 @@ function Login() {
   }
 
   return (
-    <AuthShell
-      title="Welcome back"
-      text="Login to your LifeFlow account."
-    >
+    <AuthShell title="Welcome back" text="Login to your LifeFlow account.">
       <form onSubmit={handleSubmit} className="mt-6 space-y-5">
         <div>
           <label htmlFor="email" className="label">
             Email address
           </label>
 
-          <input
-            id="email"
-            name="email"
-            type="email"
-            placeholder="you@example.com"
-            autoComplete="email"
-            required
-            className="field"
-          />
+          <div className="relative">
+            <Mail
+              size={18}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+            />
+            <input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="you@example.com"
+              autoComplete="email"
+              required
+              className="field pl-10"
+            />
+          </div>
         </div>
 
         <div>
@@ -128,18 +112,30 @@ function Login() {
             Password
           </label>
 
-          <input
-            id="password"
-            name="password"
-            type="password"
-            placeholder="Enter your password"
-            autoComplete="current-password"
-            required
-            className="field"
-          />
+          <div className="relative">
+            <Lock
+              size={18}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+            />
+            <input
+              id="password"
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Enter your password"
+              autoComplete="current-password"
+              required
+              className="field pl-10 pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted transition-colors hover:text-ink"
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
         </div>
-
-        <RolePicker roles={roles} legend="Login as" />
 
         <FormError message={error} />
 

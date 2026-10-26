@@ -11,17 +11,28 @@ import {
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { PageContainer } from '../components/ui'
+import { PageContainer, Pill } from '../components/ui'
 import NearbyDonors from '../components/NearbyDonors'
 import RequestProgress from '../components/RequestProgress'
 
 const API_URL = 'http://localhost:5000/api/requests'
 
+// Aligned with the app's token palette: blood / warn / ok
 const URGENCY_COLORS = {
-  critical: '#dc2626',
-  high: '#ea580c',
-  medium: '#16a34a',
-  low: '#16a34a',
+  critical: '#c8102e',
+  high: '#9a5700',
+  medium: '#0a7c7a',
+  low: '#0a7c7a',
+}
+
+const URGENCY_TONE = { critical: 'critical', high: 'warn', medium: 'ok', low: 'ok' }
+
+const STATUS_TONE = {
+  pending: 'warn',
+  accepted: 'ok',
+  in_progress: 'ok',
+  completed: 'ok',
+  cancelled: 'neutral',
 }
 
 // Distinct hospital marker (a "H" pin), coloured by urgency
@@ -56,10 +67,10 @@ const formatDateTime = (value) => {
 function Row({ icon: Icon, label, children }) {
   return (
     <div className="flex items-start gap-3">
-      <Icon size={19} className="mt-0.5 shrink-0 text-gray-400" />
+      <Icon size={19} className="mt-0.5 shrink-0 text-muted" />
       <div>
-        <p className="text-xs text-gray-500">{label}</p>
-        <div className="font-medium text-gray-800">{children}</div>
+        <p className="text-xs text-muted">{label}</p>
+        <div className="font-medium text-ink">{children}</div>
       </div>
     </div>
   )
@@ -116,7 +127,10 @@ function RequestDetails() {
   if (error || !request) {
     return (
       <PageContainer narrow>
-        <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+        <p
+          role="alert"
+          className="rounded-lg border border-blood/30 bg-plasma p-3 text-sm text-blood-deep"
+        >
           {error || 'Request not found.'}
         </p>
         <Link to="/show-requests" className="btn btn-secondary mt-4 inline-flex">
@@ -127,6 +141,8 @@ function RequestDetails() {
   }
 
   const urgency = (request.urgency || 'medium').toLowerCase()
+  const status = (request.status || 'pending').toLowerCase()
+
   // Only the requester, hospitals and admins may search for donors
   let currentUser = null
   try {
@@ -147,7 +163,7 @@ function RequestDetails() {
     <PageContainer narrow>
       <Link
         to="/show-requests"
-        className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-gray-900"
+        className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-muted hover:text-ink"
       >
         <ArrowLeft size={16} />
         Back to requests
@@ -168,31 +184,26 @@ function RequestDetails() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <span
-              className="rounded-full px-3 py-1 text-sm font-semibold capitalize text-white"
-              style={{ background: URGENCY_COLORS[urgency] }}
-            >
-              {urgency}
-            </span>
-            <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold capitalize text-gray-700">
-              {request.status.replace('_', ' ')}
-            </span>
+            <Pill tone={URGENCY_TONE[urgency] || 'ok'}>{urgency}</Pill>
+            <Pill tone={STATUS_TONE[status] || 'neutral'}>
+              {status.replace('_', ' ')}
+            </Pill>
           </div>
         </div>
 
         <RequestProgress status={request.status} />
 
         <div className="flex flex-wrap gap-3">
-          <div className="rounded-xl bg-red-50 px-4 py-3">
-            <p className="text-xs text-gray-500">Blood group</p>
-            <p className="mt-1 text-2xl font-bold text-red-600">
+          <div className="rounded-xl bg-plasma px-4 py-3">
+            <p className="text-xs text-muted">Blood group</p>
+            <p className="mt-1 text-2xl font-bold text-blood">
               {request.bloodGroup}
             </p>
           </div>
 
-          <div className="rounded-xl bg-gray-50 px-4 py-3">
-            <p className="text-xs text-gray-500">Units required</p>
-            <p className="mt-1 text-2xl font-bold text-gray-900">
+          <div className="rounded-xl bg-paper px-4 py-3">
+            <p className="text-xs text-muted">Units required</p>
+            <p className="mt-1 text-2xl font-bold text-ink">
               {request.units}
             </p>
           </div>
@@ -212,7 +223,7 @@ function RequestDetails() {
           <Row icon={Hospital} label="Hospital">
             <p>{request.hospitalName}</p>
             {request.hospitalAddress && (
-              <p className="text-sm font-normal text-gray-600">
+              <p className="text-sm font-normal text-muted">
                 {request.hospitalAddress}
               </p>
             )}
@@ -223,33 +234,33 @@ function RequestDetails() {
           </Row>
 
           {request.contactNumber && (
-          <Row icon={Phone} label="Contact">
-            <p>
-              {request.attendantName ? `${request.attendantName}: ` : ''}
-              <a
-                href={`tel:${request.contactNumber}`}
-                className="text-blue-600 hover:underline"
-              >
-                {request.contactNumber}
-              </a>
-            </p>
-            {request.alternateContact && (
-              <p className="text-sm font-normal text-gray-600">
-                Alternate:{' '}
+            <Row icon={Phone} label="Contact">
+              <p>
+                {request.attendantName ? `${request.attendantName}: ` : ''}
                 <a
-                  href={`tel:${request.alternateContact}`}
-                  className="text-blue-600 hover:underline"
+                  href={`tel:${request.contactNumber}`}
+                  className="text-blood hover:text-blood-deep hover:underline"
                 >
-                  {request.alternateContact}
+                  {request.contactNumber}
                 </a>
               </p>
-            )}
-          </Row>
+              {request.alternateContact && (
+                <p className="text-sm font-normal text-muted">
+                  Alternate:{' '}
+                  <a
+                    href={`tel:${request.alternateContact}`}
+                    className="text-blood hover:text-blood-deep hover:underline"
+                  >
+                    {request.alternateContact}
+                  </a>
+                </p>
+              )}
+            </Row>
           )}
 
           {!request.contactNumber && (
             <Row icon={Phone} label="Contact">
-              <span className="text-sm font-normal text-gray-600">
+              <span className="text-sm font-normal text-muted">
                 Shared with the donor who accepts this request.
               </span>
             </Row>
@@ -257,11 +268,9 @@ function RequestDetails() {
         </div>
 
         {request.notes && (
-          <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
-            <p className="mb-1 text-xs font-semibold text-gray-500">
-              Notes
-            </p>
-            <p className="text-sm text-gray-700">{request.notes}</p>
+          <div className="rounded-xl border border-line bg-paper p-3">
+            <p className="mb-1 text-xs font-semibold text-muted">Notes</p>
+            <p className="text-sm text-ink">{request.notes}</p>
           </div>
         )}
 
@@ -274,7 +283,7 @@ function RequestDetails() {
 
           {hasLocation ? (
             <>
-              <div className="overflow-hidden rounded-xl border border-gray-200">
+              <div className="overflow-hidden rounded-xl border border-line">
                 <MapContainer
                   center={[request.latitude, request.longitude]}
                   zoom={15}
@@ -310,7 +319,7 @@ function RequestDetails() {
               </a>
             </>
           ) : (
-            <p className="rounded-lg bg-gray-50 p-3 text-sm text-gray-600">
+            <p className="rounded-lg bg-paper p-3 text-sm text-muted">
               No map location was added to this request.
             </p>
           )}
